@@ -25,3 +25,15 @@
 | `$ gulp --watch` | Watch files for changes and update browser
 | `$ gulp review` | Build review page and push files to folder on FTP
 | `$ gulp deploy` | Compress files and zip folders for distribution
+
+
+**Roadmap**
+
+- Pull template remotely (from Github/Gitlab)
+- move files to FTP
+- zip folder contents up, move up to FTP
+
+NPM Packages:<br>
+<https://github.com/szwacz/fs-jetpack><br>
+<https://github.com/archiverjs/node-archiver><br>
+<https://www.npmjs.com/package/vinyl-ftp><br>
