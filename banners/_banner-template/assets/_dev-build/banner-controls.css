@@ -1,0 +1,141 @@
+.banner-controls {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    height: 50px;
+    white-space: nowrap;
+    background: #111;
+    cursor: default;
+    opacity: 0.9;
+}
+
+.play-pause {
+    float: left;
+    width: 50px;
+    height: 50px;
+}
+
+.btn-play-pause {
+    display: block;
+    padding: 0;
+    width: 50px;
+    height: 50px;
+    background: #111;
+    border: none;
+    cursor: pointer;
+}
+
+.icon-play-pause {
+    display: inline-block;
+    height: 0;
+    margin: 0;
+    border: 10px solid transparent;
+    border-right: none;
+    border-left: 20px solid #fff;
+    transform: translate(2px, 2px);
+    transition: all 100ms ease-in-out;
+}
+
+.icon-play-pause::before {
+    content: '';
+    width: 8px;
+    height: 20px;
+    background: #111;
+    position: absolute;
+    left: -14px;
+    top: -10px;
+    transform: scaleX(0);
+    transition: all 100ms ease-in-out;
+}
+
+.play-pause.pause .icon-play-pause {
+    height: 20px;
+    border-top-width: 0px;
+    border-bottom-width: 0px;
+}
+
+.play-pause.pause .icon-play-pause::before {
+    top: 0;
+    transform: scaleX(1.001);
+}
+
+.duration {
+    float: left;
+    width: 105px;
+    height: 50px;
+    font-size: 14px;
+    line-height: 50px;
+    color: #888;
+    text-align: center;
+    transition: color 250ms ease-out;
+}
+
+.duration span:first-child {
+    color: #eee;
+}
+
+.duration:hover, .duration:hover span:first-child {
+    color: #fff;
+}
+
+.progress {
+    position: absolute;
+    top: 0;
+    right: 24px;
+    bottom: 0;
+    left: 170px;
+}
+
+.progress-bar {
+    position: absolute;
+    top: 12px;
+    left: 0;
+    right: 0;
+    bottom: 12px;
+    cursor: pointer;
+}
+
+.progress-bar::before {
+    content: '';
+    position: absolute;
+    top: 10px;
+    left: 0;
+    right: 0;
+    bottom: 10px;
+    background: #000;
+}
+
+.progress-bar .total {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.progress-bar .total {
+    top: 10px;
+    bottom: 10px;
+    width: 0;
+    background: #0d3c55;
+}
+
+.progress-bar .thumb {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 25px;
+    border-radius: 50%;
+    background-color: #fff;
+    box-shadow: 0 0 0 4px #111;
+    transition: opacity 350ms ease-out;
+}
+
+.banner-controls:hover .progress-bar .thumb {
+    opacity: 1;
+}

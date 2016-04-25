@@ -1,0 +1,36 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="ad.size" content="width={{width}}, height={{height}}">
+    <title>Ad Banner: {{width}}x{{height}}</title>
+    <link rel="stylesheet" href="assets/css/source-style.css" />
+</head>
+
+<body>
+<div id="ad">
+    <button id="clickthrough-button" class="btn-overlay"></button>
+    <div class="banner" style="display:none">
+        <div class="frame" id="frame1">
+            <div class="frame1-text">3</div>
+        </div>
+        <div class="frame" id="frame2">
+            <div class="frame2-text">2</div>
+        </div>
+        <div class="frame" id="frame3">
+            <div class="frame3-text">1</div>
+        </div>
+        <div class="frame" id="frame4">
+            <div class="frame4-text">Go!</div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/1.18.3/TweenMax.min.js"></script>
+<script src="assets/js/EBLoader.js"></script>
+<script src="assets/js/script.js"></script>
+<!-- {inject:banner-controls} -->
+</body>
+</html>

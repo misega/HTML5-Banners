@@ -1,0 +1,129 @@
+# Compiled source #
+###################
+*.com
+*.class
+*.dll
+*.exe
+*.o
+*.so
+
+# Packages #
+############
+# it's better to unpack these files and commit the raw source
+# git has its own built in compression methods
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
+
+# Logs and databases #
+######################
+*.log
+*.sql
+*.sqlite
+
+# OS generated files #
+######################
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+.AppleDouble
+.LSOverride
+
+# Icon must end with two \r
+Icon
+
+
+# Drupal
+######################
+# Ignore configuration files that may contain sensitive information.
+sites/*/*settings*.php
+
+# Ignore paths that contain generated content.
+files/
+sites/*/files
+sites/*/private
+
+# Ignore default text files
+robots.txt
+/CHANGELOG.txt
+/COPYRIGHT.txt
+/INSTALL*.txt
+/LICENSE.txt
+/MAINTAINERS.txt
+/UPGRADE.txt
+/README.txt
+sites/all/README.txt
+sites/all/modules/README.txt
+sites/all/themes/README.txt
+sites/*/.tmp
+sites/*/.DS_Store
+
+# Ignore everything but the "sites" folder ( for non core developer )
+.htaccess
+web.config
+authorize.php
+cron.php
+index.php
+install.php
+update.php
+xmlrpc.php
+/includes
+/misc
+/modules
+/profiles
+/scripts
+/themes
+
+
+# Jekyll
+######################
+.jekyll-metadata
+
+# Logs and databases
+######################
+*.log
+*.sql
+*.sqlite
+
+# Node
+######################
+npm-debug.log*
+node_modules
+sites/*/node_modules
+
+# Optional npm cache directory
+.npm
+
+# Composer
+######################
+composer.phar
+/vendor/
+
+# Sass
+######################
+.sass-cache/
+*.css.map
+
+# Javascript
+######################
+*.js.map
+*.min.js
+
+# OSX
+######################
+# Files that might appear in the root of a volume
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns

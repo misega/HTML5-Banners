@@ -1,0 +1,88 @@
+/* $width: 970px;
+$height: 418px; */
+
+/* Base Styles
+--------------------------------------------------------------------------- */
+#ad {
+    display: block;
+    position: relative;
+    width: 968px;/* $width - 2px */;
+    height: 416px;/* $height - 2px */;
+    background: #000;
+    border: 1px solid #666;
+    overflow: hidden;
+    user-select: none;
+}
+
+.btn-overlay {
+    display: block;
+    position: absolute;
+    z-index: 99;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+    user-select: none;
+    cursor: pointer;
+}
+
+.banner {
+    position: relative;
+    height: 100%;
+    background: #000 url('../images/background.jpg') no-repeat top left;
+}
+
+.frame {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+
+    font: 900 60px/1 'Helvetica Neue', Helvetica, sans-serif;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: -1px;
+}
+
+/* Frame 1
+--------------------------------------------------------------------------- */
+.frame1-text {
+    position: absolute;
+    top: 175px;
+    left: 340px;
+}
+
+/* Frame 2
+--------------------------------------------------------------------------- */
+.frame2-text {
+    position: absolute;
+    top: 175px;
+    left: 340px;
+}
+
+/* Frame 3
+--------------------------------------------------------------------------- */
+.frame3-text {
+    position: absolute;
+    top: 175px;
+    left: 340px;
+}
+
+/* Frame 4
+--------------------------------------------------------------------------- */
+.frame4-text {
+    position: absolute;
+    top: 175px;
+    left: 340px;
+}
+
+/* Utility Styles
+--------------------------------------------------------------------------- */
+.u-hide {
+    display: none;
+}

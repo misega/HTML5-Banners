@@ -1,0 +1,29 @@
+{
+  "name": "client-name",
+  "title": "{{Project Title}}",
+  "description": "{{Project Description}}",
+  "author": "Brothers & Company",
+  "version": "0.1.0",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "gitlab-repository"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "postinstall": "find node_modules/ -name '*.info' -type f -delete"
+  },
+  "dependencies": {
+    "fs-jetpack": "^0.8.0",
+    "gulp": "^3.9.1",
+    "gulp-util": "^3.0.7",
+    "minimist": "^1.2.0",
+    "supplant": "^0.2.0"
+  },
+  "devDependencies": {
+    "browser-sync": "^2.12.3",
+    "gulp-help": "^1.6.1",
+    "gulp-notify": "^2.2.0",
+    "gulp-size": "^2.1.0"
+  }
+}
