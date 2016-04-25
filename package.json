@@ -14,10 +14,13 @@
     "postinstall": "find node_modules/ -name '*.info' -type f -delete"
   },
   "dependencies": {
+    "del": "^2.2.0",
     "fs-jetpack": "^0.8.0",
     "gulp": "^3.9.1",
+    "gulp-plumber": "^1.1.0",
     "gulp-util": "^3.0.7",
     "minimist": "^1.2.0",
+    "run-sequence": "^1.1.5",
     "supplant": "^0.2.0"
   },
   "devDependencies": {

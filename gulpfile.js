@@ -1,23 +1,31 @@
 /* Project Packages
 ==================================================================================================== */
-// Include Gulp
+// Main Gulp Tasks
 var gulp = require('gulp-help')(require('gulp'), {'description': '', 'hideEmpty': true, 'hideDepsMessage': true});
 var pkg = require('./package.json');
+var browserSync = require('browser-sync');
+var sequence = require('run-sequence').use(gulp);
 
-// NPM Packages
+// Misc NPM Packages
+var del = require('del');
 var fs = require('fs-jetpack');
+var size = require('gulp-size');
 var gutil = require('gulp-util');
+var notify = require('gulp-notify');
+var plumber = require('gulp-plumber');
+var flags = require('minimist')(process.argv.slice(2));
 var Supplant = require('supplant');
 var subs = new Supplant();
-var flags = require('minimist')(process.argv.slice(2));
+
+var devFolder = '';
 
 /* Setup: Initial values from banner boilerplate
 --------------------------------------------------------------------------- */
 var defaults = {
-    name: 'client-name', // 2016-bro-8813 //https://docs.npmjs.com/files/package.json#name
+    name: 'client-name', // YY-aaa-9999 (e.g. 15-car-7155); view README.md for formatting
     title: '{{Project Title}}', // Will be used on the review page template
     desc: '{{Project Description}}', // Will be used on the review page template
-    folder: '_banner-template'
+    folder: '_banner-template' // starter boilerplate to build banners
 };
 
 /* Utilities
@@ -25,29 +33,77 @@ var defaults = {
 var utils = {
     divider: function() {
         var cols = process.stdout.columns;
-        return Array.apply(null, { length: cols }).join('-').slice(0, cols);
+        return Array.apply(null, { length: cols }).join('-').slice(0, cols) + '\n';
+    },
+    message: function(msg) {
+        return utils.divider() + msg + utils.divider();
     }
 };
 
 /* TASKS
 ==================================================================================================== */
+gulp.task('default', function(done) {
+    sequence('help', done);
+});
 
 /* Task: Review -- prep banners and build review page
 --------------------------------------------------------------------------- */
 // pull remote template file, merge and put into `review` folder
+gulp.task('review', 'build review page from banner directories', function(done) {
+    console.log('review:build');
+});
+
+// gulp.task('review:ftp', 'upload review site to ftp', function(done) {
+//     console.log('review:ftp');
+// });
 
 /* Task: Deploy -- prep banners and zip each directory for distribution
 --------------------------------------------------------------------------- */
 // loop through directories, clean up folders/files, zip up for distribution
+gulp.task('deploy', 'zip up banner directories for distribution', function(done) {
+    console.log('deploy');
+});
 
 /* Watch a specific banner directory; use --flag to declare folder name
 --------------------------------------------------------------------------- */
+gulp.task('watch', 'monitor files for changes', ['preflight-directory'], function(done) {
+    // gulp.watch([config.scss.watchFiles]).on('change', function() {
+    //     sequence('styles', browserSync.reload);
+    // });
+    // gulp.watch([config.scss.copyFiles]).on('change', function() {
+    //     sequence('copy:styles', browserSync.reload);
+    // });
+    // gulp.watch(config.js.watchFiles).on('change', function() {
+    //     sequence('scripts', browserSync.reload);
+    // });
+    // gulp.watch(config.js.copyFiles).on('change', function() {
+    //     sequence('copy:scripts', browserSync.reload);
+    // });
+}, {
+    options: {
+        'folder': 'directory labeled by dimensions (e.g. --folder 300x250)',
+        'controls': 'show banner controls; enables scrubbing through timeline'
+    }
+});
 // --300x250
 // --controls
 
 
 /* SUB-TASKS
 ==================================================================================================== */
+
+/* Watch a specific banner directory; use --flag to declare folder name
+--------------------------------------------------------------------------- */
+gulp.task('browserSync', false, function(done) {
+    browserSync({
+        //proxy: 'public.drupal7.broco',
+        server: { baseDir: devFolder },
+        open: true,
+        notify: false,
+        // See: System Preferences… » Sound » Sound Effects
+        sound: 'Basso'
+    });
+});
 
 /* Setup: Make sure Package.json project info has been updated
 --------------------------------------------------------------------------- */
@@ -73,40 +129,61 @@ gulp.task('preflight-package-json', false, function() {
 
     if (errors.length) {
         var msg = errorTitle + errors.join('') + errorNote;
-        console.log(utils.divider(), msg, utils.divider());
+        console.log(utils.message(msg));
         process.exit(1);
-        // this.emit('end');
     }
 });
 
 /* Setup: Make sure folder is setup with banner dimensions
 --------------------------------------------------------------------------- */
 gulp.task('preflight-directory', false, function() {
-    // if DIR is _banner-template, then alert('copy directory or rename with banner size (e.g. 300x250'));
-    // set flag to folder "--300x250" to watch folder for changes
-    // if DIR is 300x250, check that index.html has size set. Confirm the size is 300x250
+    var errors = [];
+    var errorTitle = gutil.colors.bgRed.white.bold('  directory  ') + '\n\n';
+    var isDirectory = fs.exists('banners/' + flags.folder);
 
-    if (process.stdout.isTTY) { // is terminal window
-        console.log(utils.divider());
-        console.log('The console size is:', process.stdout.getWindowSize());
-        console.log(utils.divider());
+    // Flag isn't set. If the folder isn't declared, we can't monitor changes.
+    if (!flags.folder) {
+        errors.push(gutil.colors.red('\u2718') + gutil.colors.bold(' folder flag') + ': missing\n');
+        errors.push(gutil.colors.gray('e.g. `gulp watch --folder 300x250`\n\n'));
     }
-    var bannerDir = fs.cwd('banners/_banner-template');
-    var data = bannerDir.read('index.html');
-    if (/{{width}}/.test(data.toString())) {
-        console.log('prompt user for banner size');
+    // Flag is set but the directory is missing. Pick a directory to copy.
+    else if (!isDirectory) {
+        errors.push(gutil.colors.red('\u2718') + gutil.colors.bold(' directory') + ': missing\n');
+        // Missing directory: copy the starter boilerplate folder
+        var boilerplateExists = fs.exists('banners/' + defaults.folder);
+        if (boilerplateExists) {
+            errors.push('Copy ' + gutil.colors.cyan(defaults.folder) + ' and/or rename with banner size (e.g. ' + flags.folder + ')\n\n');
+        }
+        // Missing directory: no boilerplate folder to copy, try another folder?
+        else {
+            errors.push('Copy another directory and rename with banner size (e.g. ' + flags.folder + ')\n\n');
+        }
     }
-    // var txt = subs.text(data, {
-    //     width: 300,
-    //     height: 250
-    // });
-    // txt.split('\n').forEach(function(line, i) {
-    //     if (line.indexOf('ad.size') > -1) {
-    //         console.log(line);
-    //     }
-    //     if (line.indexOf('<title>') > -1) {
-    //         console.log(line);
-    //     }
-    // });
-    // fs.write(bannerDir.cwd() + '/index.html', txt);
+
+    if (errors.length) {
+        var msg = errorTitle + errors.join('');
+        console.log(utils.message(msg));
+        process.exit(1);
+    }
+
+    // Directory Exists. Let's update the index page and style page to show the correct dimensions
+    var currentDirectory = fs.cwd('banners/' + flags.folder);
+
+    // The directory is available, let's update files to match the directory name
+    var dimensions = flags.folder.match(/(\d{2,}x\d{2,})/g)[0].split('x');
+    var size = {
+        width: dimensions[0],
+        height: dimensions[1]
+    };
+
+    // set <meta name="ad.size"> and <title> to dimensions of folder
+    var adSizeRegExp = new RegExp('content="width=({{width}}|\d{2,}), height=({{height}}|\d{2,})"', 'g');
+    var titleRexExp = new RegExp('<title>(.*)<\/title>', 'g');
+    var indexContent = currentDirectory.read('index.html');
+    indexContent = indexContent.toString().replace(adSizeRegExp, 'content="width=' + size.width + ', height=' + size.height + '"');
+    indexContent = indexContent.toString().replace(titleRexExp, '<title>Ad Banner: ' + size.width + 'x' + size.height + '</title>');
+    fs.write(currentDirectory.cwd() + '/index.html', indexContent);
+
+    // set base folder for BrowserSync
+    devFolder = currentDirectory.cwd();
 });

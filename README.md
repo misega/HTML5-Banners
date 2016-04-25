@@ -24,11 +24,10 @@
       ├── EBLoader.js           # required Sizmek script; must load first before ad is displayed
       └── script.js             # customized script
 ```
-
 |Functions ||
 |:----|----|
 | `$ gulp` | Compile source files into working banners
-| `$ gulp watch --300x250` | Watch files for changes and update browser
+| `$ gulp watch`<br>`--folder`<br>`--controls` | Watch files for changes and update browser<br>_flag:_ folder to watch for file changes<br>_flag:_ controls to play/pause & scrub timeline
 | `$ gulp review` | Build review page; ready to push to review ftp
 | `$ gulp deploy` | Compress files and zip folders for distribution
 
@@ -61,3 +60,6 @@ _review:_<br>
 _deploy:_<br>
 <https://github.com/ben-eb/cssnano><br>
 <https://github.com/ben-eb/postcss-svgo>
+
+
+<https://docs.npmjs.com/files/package.json#name>
