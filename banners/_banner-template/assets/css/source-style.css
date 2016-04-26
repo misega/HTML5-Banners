@@ -1,13 +1,13 @@
-/* $width: 970px;
-$height: 418px; */
+$width: 970px;
+$height: 418px;
 
 /* Base Styles
 --------------------------------------------------------------------------- */
 #ad {
     display: block;
     position: relative;
-    width: 968px;/* $width - 2px */;
-    height: 416px;/* $height - 2px */;
+    width: calc($width - 2px);
+    height: calc($height - 2px);
     background: #000;
     border: 1px solid #666;
     overflow: hidden;
@@ -36,6 +36,8 @@ $height: 418px; */
     background: #000 url('../images/background.jpg') no-repeat top left;
 }
 
+/* Frame Base Style
+--------------------------------------------------------------------------- */
 .frame {
     position: absolute;
     top: 0;
