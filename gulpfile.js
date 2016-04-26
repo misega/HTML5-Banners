@@ -47,7 +47,7 @@ var paths = {
     html: '/index.html',
     img: '/assets/img/**/*',
     css: {
-        source: '/assets/css/source-style.css',
+        source: '/assets/css/source.css',
         destination: '/assets/css/'
     },
     js: '/assets/js/*.js'
@@ -263,9 +263,9 @@ gulp.task('preflight-directory', false, function() {
     indexContent = indexContent.replace(titleRexExp, '<title>Ad Banner: ' + size.width + 'x' + size.height + '</title>');
     fs.write(currentDirectory.cwd() + '/index.html', indexContent);
 
-    // source-style.css -- set css variable width/height
-    var styleContent = currentDirectory.read('assets/css/source-style.css').toString();
+    // source.css -- set css variable width/height
+    var styleContent = currentDirectory.read('assets/css/source.css').toString();
     styleContent = styleContent.replace(/{{width}}/g, size.width + 'px');
     styleContent = styleContent.replace(/{{height}}/g, size.height + 'px');
-    fs.write(currentDirectory.cwd() + '/assets/css/source-style.css', styleContent);
+    fs.write(currentDirectory.cwd() + '/assets/css/source.css', styleContent);
 });
