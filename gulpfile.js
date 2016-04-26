@@ -14,17 +14,20 @@ var calc = require('postcss-calc');
 var position = require('postcss-position-alt');
 var sorting = require('postcss-sorting');
 // Misc NPM Packages
-var del = require('del');
-var git = require('gulp-git');
+var path = require('path');
 var fs = require('fs-jetpack');
+var git = require('gulp-git');
+var zip = require('gulp-zip');
 var size = require('gulp-size');
 var gutil = require('gulp-util');
 var notify = require('gulp-notify');
 var rename = require('gulp-rename');
 var plumber = require('gulp-plumber');
+var merge = require('merge-stream');
 var flags = require('minimist')(process.argv.slice(2));
 
 var devFolder = '';
+var zipFolder = '';
 var browserSyncRewriteRules = [{
     match: /<!-- {inject:banner-controls} -->/ig,
     fn: function(match) {
@@ -62,6 +65,13 @@ var utils = {
     },
     message: function(msg) {
         return utils.divider() + msg + utils.divider();
+    },
+    getFolders: function(dir) {
+        var folders = [];
+        fs.inspectTree(dir).children.forEach(function(folder) {
+            if (folder.type === 'dir') { folders.push(folder.name); }
+        });
+        return folders;
     }
 };
 
@@ -74,8 +84,27 @@ gulp.task('default', function(done) {
 /* Task: Review -- prep banners and build review page
 --------------------------------------------------------------------------- */
 // pull remote template file, merge and put into `review` folder
-gulp.task('review', 'build review page from banner directories', function(done) {
-    console.log('review:build');
+gulp.task('review', 'build review page from banner directories', ['preflight-directory', 'styles'], function(done) {
+    // fs.remove('review');
+    // fs.dir('review/banners');
+
+    // var banners = [];
+    // var temp = fs.cwd('temporary');
+    // var folders = fs.inspectTree('temporary');
+    // folders.children.forEach(function(item) {
+    //     if (item.type !== 'dir') { return; }
+
+    //     var banner = 'review/banners/' + item.name;
+    //     banners.push(banner);
+    //     fs.copy(temp.cwd() + '/' + item.name, banner);
+    // });
+
+    // fs.find('review', { matching: ['_dev-build'], files: false, directories: true }).forEach(function(devFolder) {
+    //     fs.remove(devFolder);
+    // });
+
+    // zipFolder = 'review/banners';
+    // sequence('zip');
 });
 
 // gulp.task('review:ftp', 'upload review site to ftp', function(done) {
@@ -85,7 +114,7 @@ gulp.task('review', 'build review page from banner directories', function(done) 
 /* Task: Deploy -- prep banners and zip each directory for distribution
 --------------------------------------------------------------------------- */
 // loop through directories, clean up folders/files, zip up for distribution
-gulp.task('deploy', 'zip up banner directories for distribution', function(done) {
+gulp.task('deploy', 'zip up banner directories for distribution', ['preflight-directory', 'styles', 'review'], function(done) {
     console.log('deploy');
 });
 
@@ -106,11 +135,45 @@ gulp.task('watch', 'monitor files for changes', ['preflight-directory', 'styles'
     // });
 }, {
     options: {
-        'folder': 'directory labeled by dimensions (e.g. --folder 300x250)',
+        'folder': 'active directory to monitor (e.g. --folder 300x250)',
         'controls': 'show banner controls; enables scrubbing through timeline'
     }
 });
 
+/* Watch a specific banner directory; use --flag to declare folder name
+--------------------------------------------------------------------------- */
+gulp.task('browserSync', false, function() {
+    browserSync({
+        server: { baseDir: devFolder },
+        open: true,
+        notify: false,
+        rewriteRules: (flags.controls)? browserSyncRewriteRules : []
+    });
+});
+
+/* Two actions: Zip up each directory, zip up all directories as one
+--------------------------------------------------------------------------- */
+gulp.task('zip', false, function() {
+    var zipFolder = 'review/banners';
+    var folders = utils.getFolders(zipFolder);
+
+    var singleZip = folders.map(function(folder) {
+        return gulp
+            .src(path.join(zipFolder, folder, '/**/*'))
+            .pipe(zip(pkg.name + '_' + folder + '.zip'))
+            .pipe(gulp.dest(path.join(zipFolder, folder)));
+    });
+
+    var groupZip = gulp
+        .src(path.join(zipFolder, '/**/*'))
+        .pipe(zip(pkg.name + '-all(' + folders.length + ').zip'))
+        .pipe(gulp.dest('review/banners'));
+
+    return merge(singleZip, groupZip);
+});
+
+/* SUB-TASKS: Modify assets (html, images, styles, scripts) on change
+==================================================================================================== */
 gulp.task('html', false, function(done) {
     return gulp
         .src(devFolder + paths.html)
@@ -143,42 +206,6 @@ gulp.task('styles', false, function() {
 //     return gulp
 //         .src(devFolder + paths.script);
 // });
-
-/* Watch a specific banner directory; use --flag to declare folder name
---------------------------------------------------------------------------- */
-gulp.task('browserSync', false, function() {
-    browserSync({
-        server: { baseDir: devFolder },
-        open: true,
-        notify: false,
-        rewriteRules: (flags.controls)? browserSyncRewriteRules : []
-    });
-});
-
-/* SUB-TASKS
-==================================================================================================== */
-var reportError = function(error) {
-    var lineNumber = (error.line) ? 'LINE ' + error.line + ' -- ' : '';
-
-    notify({
-        title: 'Task Failed [' + error.plugin + ']',
-        message: lineNumber + 'See console.',
-        // See: System Preferences… » Sound » Sound Effects
-        sound: 'Basso'
-    }).write(error);
-
-    // Pretty error reporting
-    var report = '';
-    var chalk = gutil.colors.white.bgRed;
-
-    report += chalk('TASK:') + ' [' + error.plugin + ']\n';
-    if (error.line) { report += chalk('LINE:') + ' ' + error.line + '\n'; }
-    report += chalk('PROB:') + ' ' + error.messageFormatted + '\n';
-    console.error(report);
-
-    // Prevent the 'watch' task from stopping
-    this.emit('end');
-};
 
 /* SUB-TASKS: Preflight Checklist
 ==================================================================================================== */
@@ -214,7 +241,7 @@ gulp.task('preflight-package-json', false, function() {
 
 /* Setup: Make sure folder is setup with banner dimensions
 --------------------------------------------------------------------------- */
-gulp.task('preflight-directory', false, function() {
+gulp.task('preflight-directory', false, ['preflight-package-json'], function() {
     var errors = [];
     var errorTitle = gutil.colors.bgRed.white.bold('  directory  ') + '\n\n';
     var isDirectory = fs.exists('banners/' + flags.folder);
@@ -269,3 +296,28 @@ gulp.task('preflight-directory', false, function() {
     styleContent = styleContent.replace(/{{height}}/g, size.height + 'px');
     fs.write(currentDirectory.cwd() + '/assets/css/source.css', styleContent);
 });
+
+/* SUB-TASKS: Error Reporting
+==================================================================================================== */
+var reportError = function(error) {
+    var lineNumber = (error.line) ? 'LINE ' + error.line + ' -- ' : '';
+
+    notify({
+        title: 'Task Failed [' + error.plugin + ']',
+        message: lineNumber + 'See console.',
+        // See: System Preferences… » Sound » Sound Effects
+        sound: 'Basso'
+    }).write(error);
+
+    // Pretty error reporting
+    var report = '';
+    var chalk = gutil.colors.white.bgRed;
+
+    report += chalk('TASK:') + ' [' + error.plugin + ']\n';
+    if (error.line) { report += chalk('LINE:') + ' ' + error.line + '\n'; }
+    report += chalk('PROB:') + ' ' + error.messageFormatted + '\n';
+    console.error(report);
+
+    // Prevent the 'watch' task from stopping
+    this.emit('end');
+};

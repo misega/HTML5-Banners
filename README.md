@@ -10,7 +10,7 @@
   ├── index.html                # The ad file, with the ad configuration and init code
   ├── fallback.jpg              # required; task `gulp deploy` will fail, if image missing
   └─┬ assets/
-    ├─┬ _dev-build/             # available during production; will be removed when deployed
+    ├─┬ _dev-build/             # available during development; will be removed when deployed
     │ ├── _banners.js           # installs required development assets
     │ ├── banner-controls.js    # installs/instantiates control bar
     │ └── banner-controls.css   # styles for control bar
@@ -34,15 +34,11 @@
 
 **Roadmap**
 
+- Loop through directories and list names
+- move all directories to a new folder
 - Pull template remotely (from Github/Gitlab)
-- move files to FTP
 - zip folder contents up, move up to FTP
-
-**browser-sync rewriteRules**
-
-- <http://quick.as/ly3ulob0>
-- <https://www.browsersync.io/docs/options/#option-rewriteRules>
-- <https://github.com/BrowserSync/browser-sync-client/blob/master/gulpfile.js>
+- move all directories to FTP
 
 NPM Packages:<br>
 <https://github.com/szwacz/fs-jetpack><br>
@@ -50,12 +46,7 @@ NPM Packages:<br>
 <https://github.com/amokjs/amok><br>
 <https://github.com/Freyskeyd/gulp-prompt><br>
 POSTCSS:<br>
-_develop:_<br>
-<https://github.com/seaneking/postcss-position><br>
-<https://github.com/jonathantneal/postcss-advanced-variables><br>
 _review:_<br>
-<https://github.com/glebmachine/postcss-cachebuster><br>
-<https://github.com/hudochenkov/postcss-sorting><br>
 <https://github.com/stylelint/stylelint><br>
 _deploy:_<br>
 <https://github.com/ben-eb/cssnano><br>
