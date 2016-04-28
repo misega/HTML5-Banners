@@ -26,7 +26,7 @@
 ```
 |Functions ||
 |:----|----|
-| `$ gulp` | Compile source files into working banners
+| `$ gulp` | Will show all available tasks
 | `$ gulp watch`<br>`--folder`<br>`--controls` | Watch files for changes and update browser<br>_flag:_ folder to watch for file changes<br>_flag:_ controls to play/pause & scrub timeline
 | `$ gulp review` | Build review page; ready to push to review ftp
 | `$ gulp deploy` | Compress files and zip folders for distribution
@@ -34,15 +34,10 @@
 
 **Roadmap**
 
-- Loop through directories and list names
-- move all directories to a new folder
 - Pull template remotely (from Github/Gitlab)
-- zip folder contents up, move up to FTP
 - move all directories to FTP
 
 NPM Packages:<br>
-<https://github.com/szwacz/fs-jetpack><br>
-<https://github.com/archiverjs/node-archiver><br>
 <https://github.com/amokjs/amok><br>
 <https://github.com/Freyskeyd/gulp-prompt><br>
 POSTCSS:<br>
