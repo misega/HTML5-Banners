@@ -111,9 +111,13 @@ function initEB() {
 }
 
 function startAd() {
-    document.getElementById('clickthrough-button').addEventListener('click', EB.clickthrough);
+    document.getElementById('clickthrough-button').addEventListener('click', clickthru);
     document.querySelector('.banner').style.display = 'block';
     timeline.init();
+}
+
+function clickthru() {
+    EB.clickthrough();
 }
 
 window.addEventListener('load', initEB);

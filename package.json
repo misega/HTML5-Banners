@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "autoprefixer": "^6.3.6",
+    "cheerio": "^0.20.0",
     "fs-jetpack": "^0.8.0",
     "gulp": "^3.9.1",
     "gulp-git": "^1.7.1",

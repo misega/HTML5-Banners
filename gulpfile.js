@@ -24,16 +24,30 @@ var notify = require('gulp-notify');
 var rename = require('gulp-rename');
 var plumber = require('gulp-plumber');
 var merge = require('merge-stream');
+var cheerio = require('cheerio');
 var flags = require('minimist')(process.argv.slice(2));
 
 var devFolder = '';
 var zipFolder = '';
+var sizeRegExp = new RegExp('(\\d{2,}x\\d{2,})', 'g');
 var browserSyncRewriteRules = [{
     match: /<!-- {inject:banner-controls} -->/ig,
     fn: function(match) {
         return '<script src="assets/_dev-build/_banners.js"></script>';
     }
 }];
+
+var project = {
+    year: pkg.name.split('-')[0],
+    clientCode: pkg.name.split('-')[1].toUpperCase(),
+    jobCode: pkg.name.split('-')[2],
+    get name() {
+        return this.year + this.clientCode + this.jobCode;
+    },
+    get title() {
+        return this.clientCode + ' ' + this.jobCode + ' ' + pkg.title;
+    }
+};
 
 /* Setup: Initial values from banner boilerplate
 --------------------------------------------------------------------------- */
@@ -84,27 +98,70 @@ gulp.task('default', function(done) {
 /* Task: Review -- prep banners and build review page
 --------------------------------------------------------------------------- */
 // pull remote template file, merge and put into `review` folder
-gulp.task('review', 'build review page from banner directories', ['preflight-directory', 'styles'], function(done) {
-    // fs.remove('review');
-    // fs.dir('review/banners');
+gulp.task('review', 'build review page from banner directories', ['preflight-package-json', 'styles', 'git:review-template'], function(done) {
+    var bannerList = [];
+    var bannerHtml = [];
 
-    // var banners = [];
-    // var temp = fs.cwd('temporary');
-    // var folders = fs.inspectTree('temporary');
-    // folders.children.forEach(function(item) {
-    //     if (item.type !== 'dir') { return; }
+    // Copy banners into review (only folders with dimensions in label)
+    var banners = utils.getFolders('banners');
+    banners.forEach(function(item) {
+        if (item.match(sizeRegExp)) {
+            var banner = './review/banners/' + item;
+            fs.copy('./banners/' + item, banner);
+            bannerList.push(item);
+        }
+    });
 
-    //     var banner = 'review/banners/' + item.name;
-    //     banners.push(banner);
-    //     fs.copy(temp.cwd() + '/' + item.name, banner);
-    // });
+    // remove unnecessary files/folders
+    fs.find('review/banners', { matching: ['_dev-build'], files: false, directories: true }).forEach(fs.remove);
 
-    // fs.find('review', { matching: ['_dev-build'], files: false, directories: true }).forEach(function(devFolder) {
-    //     fs.remove(devFolder);
-    // });
+    /* Review Template -- update content
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+    var reviewDirectory = fs.cwd('./review');
+    var indexBody = reviewDirectory.read('index.html').toString();
+    var $ = cheerio.load(indexBody);
 
-    // zipFolder = 'review/banners';
-    // sequence('zip');
+    var title = $('title').text().replace('{{title}}', project.title);
+    $('title').text(title);
+    $('h3.headline').text(project.title);
+    // Update Tabs
+    var tpl_tab = $('#tab-item').html().replace(/^\s+/, '').replace(/\s+$/, '');
+    var tpl_tab_single = $('#tab-single-item').html().replace(/^\s+/, '').replace(/\s+$/, '');
+    $(bannerList).each(function(i, banner) {
+        bannerHtml.push(tpl_tab.replace('{{size}}', banner));
+    });
+    bannerHtml.push(tpl_tab_single.replace('{{size}}', bannerList[0]));
+    $('.tabs').html(bannerHtml.join(''));
+    $('#tab-item, #tab-single-item').remove(); // remove the templates from the index page
+    // write all the changes to the page
+    fs.write(reviewDirectory.cwd() + '/index.html', $.html());
+
+    sequence('zip');
+});
+
+/* Clone Review Template git repository and update with project-specific info
+--------------------------------------------------------------------------- */
+gulp.task('git:review-template', false, function(done) {
+    // clean up; remove any pre-existing `review` folder; fs.remove() doesn't work on non-empty folders
+    if (fs.exists('./review')) {
+        fs.find('./review', { matching: '*', }).forEach(fs.remove); // first remove all files
+        fs.find('./review', { matching: '*', directories: true }).forEach(fs.remove); // remove all directories
+    }
+
+    // Clone Review Page repository and set up directory
+    git.clone('https://github.com/misega/HTML5-Banners-Review-Site', {args: './review'}, function(err) {
+        if (err) { console.log(err); }
+        // remove extra files
+        fs.remove('./review/README.md');
+        fs.remove('./review/source');
+        // move files to ./review root
+        var review = fs.cwd('./review/public');
+        review.move('./index.html', '../index.html');
+        review.move('./assets', '../assets');
+        fs.remove('./review/public');
+
+        done();
+    });
 });
 
 // gulp.task('review:ftp', 'upload review site to ftp', function(done) {
@@ -160,13 +217,13 @@ gulp.task('zip', false, function() {
     var singleZip = folders.map(function(folder) {
         return gulp
             .src(path.join(zipFolder, folder, '/**/*'))
-            .pipe(zip(pkg.name + '_' + folder + '.zip'))
+            .pipe(zip(project.name + '_' + folder + '.zip'))
             .pipe(gulp.dest(path.join(zipFolder, folder)));
     });
 
     var groupZip = gulp
         .src(path.join(zipFolder, '/**/*'))
-        .pipe(zip(pkg.name + '-all(' + folders.length + ').zip'))
+        .pipe(zip(project.name + '-all(' + folders.length + ').zip'))
         .pipe(gulp.dest('review/banners'));
 
     return merge(singleZip, groupZip);
@@ -217,11 +274,11 @@ gulp.task('preflight-package-json', false, function() {
     var errorTitle = gutil.colors.bgRed.white.bold('  package.json  ') + '\n\nRequired Project Information:\n';
     var errorNote = '\nProject information will be displayed\non the generated review page.\nView ' + gutil.colors.cyan.italic('README.md') + ' for more details\n\n';
 
-    if (pkg.name === defaults.name || !pkg.name.length) {
-        errors.push(gutil.colors.red('\u2718') + gutil.colors.bold(' name') + ': missing\n');
-    }
-    else if (!pkg.name.match(/\b(\d{2}[-]?[a-z]{3}[-]?\d{4})\b/)) {
-        errors.push(gutil.colors.red('\u2718') + gutil.colors.bold(' name') + ': incorrect formatting\n');
+    if (pkg.name === defaults.name || !pkg.name.length || !pkg.name.match(/\b(\d{2}[-]?[a-z]{3}[-]?\d{4})\b/)) {
+        errors.push(gutil.colors.red('\u2718') + gutil.colors.bold(' name') + ': required format ' + gutil.colors.gray('YY-aaa-9999') + '\n');
+        errors.push('  - YY: 2-digit Year\n');
+        errors.push('  - aaa: 3-digit Client Code\n');
+        errors.push('  - 9999: 4-digit Job Code\n');
     }
 
     if (pkg.title === defaults.title || !pkg.title.length) {
@@ -276,7 +333,7 @@ gulp.task('preflight-directory', false, ['preflight-package-json'], function() {
     var currentDirectory = fs.cwd('banners/' + flags.folder);
     devFolder = currentDirectory.cwd();
     // The directory is available, let's update files to match the directory name
-    var dimensions = flags.folder.match(/(\d{2,}x\d{2,})/g)[0].split('x');
+    var dimensions = flags.folder.match(sizeRegExp)[0].split('x');
     var size = {
         width: dimensions[0],
         height: dimensions[1]
@@ -318,6 +375,6 @@ var reportError = function(error) {
     report += chalk('PROB:') + ' ' + error.messageFormatted + '\n';
     console.error(report);
 
-    // Prevent the 'watch' task from stopping
+    // Prevent the `watch` task from stopping
     this.emit('end');
 };
