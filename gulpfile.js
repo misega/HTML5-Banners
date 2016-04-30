@@ -20,6 +20,7 @@ var git = require('gulp-git');
 var zip = require('gulp-zip');
 var size = require('gulp-size');
 var gutil = require('gulp-util');
+var sizeOf = require('image-size');
 var notify = require('gulp-notify');
 var rename = require('gulp-rename');
 var plumber = require('gulp-plumber');
@@ -86,6 +87,28 @@ var utils = {
             if (folder.type === 'dir') { folders.push(folder.name); }
         });
         return folders;
+    },
+    getBanners: function() {
+        var bannerList = [];
+        // return only folders with dimensions in label
+        var banners = utils.getFolders('banners');
+        banners.forEach(function(item) {
+            if (item.match(sizeRegExp)) {
+                bannerList.push(item);
+            }
+        });
+
+        return bannerList;
+    },
+    getDimensions: function(item) {
+        var dimensions = item.match(sizeRegExp)[0].split('x');
+        return {
+            width: parseInt(dimensions[0], 10),
+            height: parseInt(dimensions[1], 10),
+            get formatted() {
+                return this.width + 'x' + this.height;
+            }
+        };
     }
 };
 
@@ -98,18 +121,14 @@ gulp.task('default', function(done) {
 /* Task: Review -- prep banners and build review page
 --------------------------------------------------------------------------- */
 // pull remote template file, merge and put into `review` folder
-gulp.task('review', 'build review page from banner directories', ['preflight-package-json', 'styles', 'git:review-template'], function(done) {
-    var bannerList = [];
+gulp.task('review', 'build review page from banner directories', ['preflight-package-json', 'directory-check', 'git:review-template'], function(done) {
     var bannerHtml = [];
 
     // Copy banners into review (only folders with dimensions in label)
-    var banners = utils.getFolders('banners');
-    banners.forEach(function(item) {
-        if (item.match(sizeRegExp)) {
-            var banner = './review/banners/' + item;
-            fs.copy('./banners/' + item, banner);
-            bannerList.push(item);
-        }
+    var bannerList = utils.getBanners();
+    bannerList.forEach(function(item) {
+        var banner = './review/banners/' + item;
+        fs.copy('./banners/' + item, banner);
     });
 
     // remove unnecessary files/folders
@@ -144,7 +163,7 @@ gulp.task('review', 'build review page from banner directories', ['preflight-pac
 gulp.task('git:review-template', false, function(done) {
     // clean up; remove any pre-existing `review` folder; fs.remove() doesn't work on non-empty folders
     if (fs.exists('./review')) {
-        fs.find('./review', { matching: '*', }).forEach(fs.remove); // first remove all files
+        fs.find('./review', { matching: '*' }).forEach(fs.remove); // first remove all files
         fs.find('./review', { matching: '*', directories: true }).forEach(fs.remove); // remove all directories
     }
 
@@ -171,7 +190,7 @@ gulp.task('git:review-template', false, function(done) {
 /* Task: Deploy -- prep banners and zip each directory for distribution
 --------------------------------------------------------------------------- */
 // loop through directories, clean up folders/files, zip up for distribution
-gulp.task('deploy', 'zip up banner directories for distribution', ['preflight-directory', 'styles', 'review'], function(done) {
+gulp.task('deploy', 'zip up banner directories for distribution', ['preflight-package-json', 'directory-check', 'review'], function(done) {
     console.log('deploy');
 });
 
@@ -217,16 +236,72 @@ gulp.task('zip', false, function() {
     var singleZip = folders.map(function(folder) {
         return gulp
             .src(path.join(zipFolder, folder, '/**/*'))
+            .pipe(plumber({ errorHandler: reportError }))
             .pipe(zip(project.name + '_' + folder + '.zip'))
             .pipe(gulp.dest(path.join(zipFolder, folder)));
     });
 
     var groupZip = gulp
         .src(path.join(zipFolder, '/**/*'))
+        .pipe(plumber({ errorHandler: reportError }))
         .pipe(zip(project.name + '-all(' + folders.length + ').zip'))
         .pipe(gulp.dest('review/banners'));
 
     return merge(singleZip, groupZip);
+});
+
+/* Check to make sure there are directories with dimensions in label
+ * Also check to make sure there are fallback images
+--------------------------------------------------------------------------- */
+gulp.task('directory-check', false, function() {
+    var errorTitle = '';
+    var errorNote = '';
+    var errors = [];
+    var missingImages = [];
+
+    var bannerList = utils.getBanners();
+    if (!bannerList.length) {
+        errorTitle = gutil.colors.bgRed.white.bold('  Empty Banner Directory  ') + '\n\n';
+        errors.push(gutil.colors.red('\u2718') + gutil.colors.bold(' Banners') + ': missing\n\n');
+
+        var boilerplateExists = fs.exists('banners/' + defaults.folder);
+        if (boilerplateExists) {
+            errors.push('Copy ' + gutil.colors.cyan(defaults.folder) + ' and/or rename with banner size (e.g. 300x250)\n');
+            errors.push('Then run `gulp watch --folder 300x250` to build banners\n');
+        }
+    }
+    else {
+        errorTitle = gutil.colors.bgRed.white.bold('  Fallback Images  ') + '\n\n';
+        errorNote = gutil.colors.gray('\nFix any issues with the fallback image(s) before proceeding\n');
+        bannerList.forEach(function(banner) {
+            var fallback = fs.find('./review/banners/' + banner, { matching: ['fallback.*'] });
+            if (!fallback.length) { // no image found
+                errors.push(gutil.colors.red('\u2718 ') + gutil.colors.bold(banner) + ': missing fallback image\n');
+            }
+            else {
+                // Check for correct mime type of fallback image
+                if (!fallback[0].match(/jpg|gif|png/)) {
+                    errors.push(gutil.colors.red('\u2718 ') + gutil.colors.bold(banner) + ': wrong mimetype \u2192 ' + gutil.colors.red(fallback[0].split('.').pop().toUpperCase()) + '\n');
+                    errors.push('  - Allowed mime-types: ' + gutil.colors.cyan('JPG, GIF, PNG') + '\n');
+                }
+                else {
+                    var folderSize = utils.getDimensions(banner);
+                    var dimensions = sizeOf(fallback[0]);
+                    if (folderSize.width !== dimensions.width && folderSize.height !== dimensions.height) {
+                        errors.push(gutil.colors.red('\u2718 ') + gutil.colors.bold(banner) + ': fallback image size doesn\'t match\n');
+                        errors.push('  - folder size: ' + gutil.colors.cyan(folderSize.formatted) + '\n');
+                        errors.push('  - image size: ' + gutil.colors.cyan(dimensions.width + 'x' + dimensions.height) + '\n');
+                    }
+                }
+            }
+        });
+    }
+
+    if (errors.length) {
+        var msg = errorTitle + errors.join('') + errorNote + '\n';
+        console.log(utils.message(msg));
+        process.exit(1);
+    }
 });
 
 /* SUB-TASKS: Modify assets (html, images, styles, scripts) on change
@@ -333,11 +408,7 @@ gulp.task('preflight-directory', false, ['preflight-package-json'], function() {
     var currentDirectory = fs.cwd('banners/' + flags.folder);
     devFolder = currentDirectory.cwd();
     // The directory is available, let's update files to match the directory name
-    var dimensions = flags.folder.match(sizeRegExp)[0].split('x');
-    var size = {
-        width: dimensions[0],
-        height: dimensions[1]
-    };
+    var size = utils.getDimensions(flags.folder);
 
     // index.html -- set <meta name="ad.size"> and <title> to dimensions of folder
     var adSizeRegExp = new RegExp('content="width=({{width}}|\d{2,}), height=({{height}}|\d{2,})"', 'g');

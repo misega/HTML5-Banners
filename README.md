@@ -9,7 +9,7 @@
 └─┬ _banners/                   # directory to contain all banner sizes
   └─┬ _banner-template/         # initial banner setup; duplicate to customize
     ├── index.html              # The ad file, with the ad configuration and init code
-    ├── fallback.jpg            # required; task `gulp deploy` will fail, if image missing
+    ├── fallback.jpg            # required; Formats accepted: JPG, GIF, PNG
     └─┬ assets/
       ├─┬ _dev-build/           # available during development; will be removed when deployed
       │ ├── _banners.js         # installs required development assets
