@@ -6,23 +6,24 @@
 ├── gulp.js                     # build configuration
 ├── package.json                # list of npm packages and some configurations
 ├── node_modules/               # will be created with `npm install`
-└─┬ _banner-template/           # initial banner setup; duplicate to customize
-  ├── index.html                # The ad file, with the ad configuration and init code
-  ├── fallback.jpg              # required; task `gulp deploy` will fail, if image missing
-  └─┬ assets/
-    ├─┬ _dev-build/             # available during development; will be removed when deployed
-    │ ├── _banners.js           # installs required development assets
-    │ ├── banner-controls.js    # installs/instantiates control bar
-    │ └── banner-controls.css   # styles for control bar
-    ├─┬ css/
-    │ ├── style.css             # compiled styles
-    │ ├── source.css            # main styles; compiled by postcss into `style.css`
-    │ └── fonts/                # local font files (optional)
-    ├─┬ img/                    # graphic files: jpg, gif, png, or svg
-    │ └── keyframes/            # keyframe graphics from PSD for layout/placement
-    └─┬ js/
-      ├── EBLoader.js           # required Sizmek script; must load first before ad is displayed
-      └── script.js             # customized script
+└─┬ _banners/                   # directory to contain all banner sizes
+  └─┬ _banner-template/         # initial banner setup; duplicate to customize
+    ├── index.html              # The ad file, with the ad configuration and init code
+    ├── fallback.jpg            # required; task `gulp deploy` will fail, if image missing
+    └─┬ assets/
+      ├─┬ _dev-build/           # available during development; will be removed when deployed
+      │ ├── _banners.js         # installs required development assets
+      │ ├── banner-controls.js  # installs/instantiates control bar
+      │ └── banner-controls.css # styles for control bar
+      ├─┬ css/
+      │ ├── style.css           # compiled styles
+      │ ├── source.css          # main styles; compiled by postcss into `style.css`
+      │ └── fonts/              # local font files (optional)
+      ├─┬ img/                  # graphic files: jpg, gif, png, or svg
+      │ └── keyframes/          # keyframe graphics from PSD for layout/placement
+      └─┬ js/
+        ├── EBLoader.js         # required Sizmek script; must load first before ad is displayed
+        └── script.js           # customized script
 ```
 |Functions ||
 |:----|----|
@@ -34,7 +35,6 @@
 
 **Roadmap**
 
-- Pull template remotely (from Github/Gitlab)
 - move all directories to FTP
 
 NPM Packages:<br>
