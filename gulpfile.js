@@ -131,6 +131,12 @@ gulp.task('review', 'build review page from banner directories', ['preflight-pac
         fs.copy('./banners/' + item, banner);
     });
 
+    // rename fallback image
+    fs.find('review/banners', { matching: ['fallback.{jpg,gif,png}'] }).forEach(function(image) {
+        var ext = image.split('.').pop();
+        fs.rename(image, project.name + '_' + utils.getDimensions(image).formatted + '.' + ext);
+    });
+
     // remove unnecessary files/folders
     fs.find('review/banners', { matching: ['_dev-build'], files: false, directories: true }).forEach(fs.remove);
 
@@ -200,15 +206,15 @@ gulp.task('watch', 'monitor files for changes', ['preflight-directory', 'styles'
     gulp.watch([devFolder + paths.html]).on('change', function() {
         sequence('html', browserSync.reload);
     });
-    // gulp.watch([devFolder + paths.img]).on('change', function() {
-    //     sequence('assets', browserSync.reload);
-    // });
+    gulp.watch([devFolder + paths.img]).on('change', function() {
+        sequence(browserSync.reload);
+    });
     gulp.watch(devFolder + paths.css.source).on('change', function() {
         sequence('styles', browserSync.reload);
     });
-    // gulp.watch(devFolder + paths.js).on('change', function() {
-    //     sequence('scripts', browserSync.reload);
-    // });
+    gulp.watch(devFolder + paths.js).on('change', function() {
+        sequence(browserSync.reload);
+    });
 }, {
     options: {
         'folder': 'active directory to monitor (e.g. --folder 300x250)',
@@ -274,7 +280,7 @@ gulp.task('directory-check', false, function() {
         errorTitle = gutil.colors.bgRed.white.bold('  Fallback Images  ') + '\n\n';
         errorNote = gutil.colors.gray('\nFix any issues with the fallback image(s) before proceeding\n');
         bannerList.forEach(function(banner) {
-            var fallback = fs.find('./review/banners/' + banner, { matching: ['fallback.*'] });
+            var fallback = fs.find('./banners/' + banner, { matching: ['fallback.*'] });
             if (!fallback.length) { // no image found
                 errors.push(gutil.colors.red('\u2718 ') + gutil.colors.bold(banner) + ': missing fallback image\n');
             }
