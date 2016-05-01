@@ -100,6 +100,12 @@ var utils = {
 
         return bannerList;
     },
+    removeDirectory: function(directory) {
+        if (fs.exists(directory)) {
+            fs.find(directory, { matching: ['*'] }).forEach(fs.remove); // first remove all files
+            fs.find(directory, { matching: ['*'], directories: true }).forEach(fs.remove); // remove all directories
+        }
+    },
     getDimensions: function(item) {
         var dimensions = item.match(sizeRegExp)[0].split('x');
         return {
@@ -161,17 +167,14 @@ gulp.task('review', 'build review page from banner directories', ['preflight-pac
     // write all the changes to the page
     fs.write(reviewDirectory.cwd() + '/index.html', $.html());
 
-    sequence('zip');
+    done();
 });
 
 /* Clone Review Template git repository and update with project-specific info
 --------------------------------------------------------------------------- */
 gulp.task('git:review-template', false, function(done) {
-    // clean up; remove any pre-existing `review` folder; fs.remove() doesn't work on non-empty folders
-    if (fs.exists('./review')) {
-        fs.find('./review', { matching: '*' }).forEach(fs.remove); // first remove all files
-        fs.find('./review', { matching: '*', directories: true }).forEach(fs.remove); // remove all directories
-    }
+    // clean up; remove any pre-existing `review` folder
+    utils.removeDirectory('review');
 
     // Clone Review Page repository and set up directory
     git.clone('https://github.com/misega/HTML5-Banners-Review-Site', {args: './review'}, function(err) {
@@ -193,7 +196,16 @@ gulp.task('git:review-template', false, function(done) {
 --------------------------------------------------------------------------- */
 // loop through directories, clean up folders/files, zip up for distribution
 gulp.task('deploy', 'zip up banner directories for distribution', ['preflight-package-json', 'directory-check', 'review'], function(done) {
-    console.log('deploy');
+    utils.removeDirectory('deploy');
+    fs.move('review/banners', 'deploy');
+    utils.removeDirectory('review');
+    // compress all files
+    sequence('zip');
+    // remove all directories
+    var banners = utils.getBanners();
+    banners.forEach(function(folder) {
+        utils.removeDirectory('./deploy/' + folder);
+    });
 });
 
 /* Watch a specific banner directory; use --flag to declare folder name
@@ -232,7 +244,7 @@ gulp.task('browserSync', false, function() {
 /* Two actions: Zip up each directory, zip up all directories as one
 --------------------------------------------------------------------------- */
 gulp.task('zip', false, function() {
-    var zipFolder = 'review/banners';
+    var zipFolder = 'deploy';
     var folders = utils.getFolders(zipFolder);
 
     var singleZip = folders.map(function(folder) {
@@ -240,14 +252,14 @@ gulp.task('zip', false, function() {
             .src(path.join(zipFolder, folder, '/**/*'))
             .pipe(plumber({ errorHandler: reportError }))
             .pipe(zip(project.name + '_' + folder + '.zip'))
-            .pipe(gulp.dest(path.join(zipFolder, folder)));
+            .pipe(gulp.dest(zipFolder));
     });
 
     var groupZip = gulp
         .src(path.join(zipFolder, '/**/*'))
         .pipe(plumber({ errorHandler: reportError }))
         .pipe(zip(project.name + '-all(' + folders.length + ').zip'))
-        .pipe(gulp.dest('review/banners'));
+        .pipe(gulp.dest(zipFolder));
 
     return merge(singleZip, groupZip);
 });

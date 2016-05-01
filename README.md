@@ -34,7 +34,6 @@
 
 
 NPM Packages:<br>
-<https://github.com/amokjs/amok><br>
 <https://github.com/Freyskeyd/gulp-prompt><br>
 POSTCSS:<br>
 _review:_<br>
