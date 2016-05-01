@@ -189,10 +189,6 @@ gulp.task('git:review-template', false, function(done) {
     });
 });
 
-// gulp.task('review:ftp', 'upload review site to ftp', function(done) {
-//     console.log('review:ftp');
-// });
-
 /* Task: Deploy -- prep banners and zip each directory for distribution
 --------------------------------------------------------------------------- */
 // loop through directories, clean up folders/files, zip up for distribution

@@ -33,10 +33,6 @@
 | `$ gulp deploy` | Compress files and zip folders for distribution
 
 
-**Roadmap**
-
-- move all directories to FTP
-
 NPM Packages:<br>
 <https://github.com/amokjs/amok><br>
 <https://github.com/Freyskeyd/gulp-prompt><br>
