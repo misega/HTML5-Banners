@@ -102,12 +102,10 @@ var timeline = (function MasterTimeline() {
 // Banner Init
 // ====================================================================================================
 function initEB() {
-    if (!EB.isInitialized()) {
-        EB.addEventListener(EBG.EventName.EB_INITIALIZED, startAd);
-    }
-    else {
-        startAd();
-    }
+    (function waitForEB_Initialized() {
+        if (window.EBG.EventName.EB_INITIALIZED) { startAd(); }
+        else { setTimeout(waitForEB_Initialized, 25); }
+    })();
 }
 
 function startAd() {
