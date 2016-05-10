@@ -14,8 +14,10 @@ var calc = require('postcss-calc');
 var position = require('postcss-position-alt');
 var sorting = require('postcss-sorting');
 // Misc NPM Packages
+var del = require('del');
 var path = require('path');
 var fs = require('fs-jetpack');
+var tap = require('gulp-tap');
 var git = require('gulp-git');
 var zip = require('gulp-zip');
 var size = require('gulp-size');
@@ -28,8 +30,8 @@ var merge = require('merge-stream');
 var cheerio = require('cheerio');
 var flags = require('minimist')(process.argv.slice(2));
 
-var devFolder = '';
-var zipFolder = '';
+var watchFolder = '';
+var zipFolder = 'deploy';
 var sizeRegExp = new RegExp('(\\d{2,}x\\d{2,})', 'g');
 var browserSyncRewriteRules = [{
     match: /<!-- {inject:banner-controls} -->/ig,
@@ -100,11 +102,23 @@ var utils = {
 
         return bannerList;
     },
-    removeDirectory: function(directory) {
-        if (fs.exists(directory)) {
-            fs.find(directory, { matching: ['*'] }).forEach(fs.remove); // first remove all files
-            fs.find(directory, { matching: ['*'], directories: true }).forEach(fs.remove); // remove all directories
-        }
+    walkDirectory: function(dir, filelist) {
+        var fso = fso || require('fs');
+        var files = fso.readdirSync(dir);
+        filelist = filelist || [];
+
+        files.forEach(function(file) {
+            if (fso.statSync(dir + '/' + file).isDirectory()) {
+                filelist = utils.walkDirectory(dir + '/' + file, filelist);
+            }
+            else {
+                if (!/(\.DS_Store|\.keep)/.test(file)) {
+                    filelist.push(fs.inspect(dir + '/' + file, {times: true}));
+                }
+            }
+        });
+
+        return filelist;
     },
     getDimensions: function(item) {
         var dimensions = item.match(sizeRegExp)[0].split('x');
@@ -118,17 +132,78 @@ var utils = {
     }
 };
 
-/* TASKS
+/* TASK: Default -- Will only show `help` message; list all available tasks
 ==================================================================================================== */
 gulp.task('default', function(done) {
     sequence('help', done);
 });
 
-/* Task: Review -- prep banners and build review page
+/* TASK: Watch -- Watch a specific banner directory for changes; set flag `--folder {name}`
+==================================================================================================== */
+gulp.task('watch', 'monitor files for changes', ['preflight:watch-directory', 'update:watch-directory', 'styles', 'browserSync'], function(done) {
+    gulp.watch([watchFolder + paths.html]).on('change', function() {
+        sequence('html', browserSync.reload);
+    });
+    gulp.watch([watchFolder + paths.img]).on('change', function() {
+        sequence(browserSync.reload);
+    });
+    gulp.watch(watchFolder + paths.css.source).on('change', function() {
+        sequence('styles', browserSync.reload);
+    });
+    gulp.watch(watchFolder + paths.js).on('change', function() {
+        sequence(browserSync.reload);
+    });
+}, {
+    options: {
+        'folder': 'active directory to monitor (e.g. --folder 300x250)',
+        'controls': 'show banner controls; enables scrubbing through timeline'
+    }
+});
+
+gulp.task('update:watch-directory', false, function() {
+    /* Directory Exists. Let's update the index page and style page to show the correct dimensions
+    --------------------------------------------------------------------------- */
+    var currentDirectory = fs.cwd('banners/' + flags.folder);
+    watchFolder = currentDirectory.cwd();
+    // The directory is available, let's update files to match the directory name
+    var size = utils.getDimensions(flags.folder);
+
+    // index.html -- set <meta name="ad.size"> and <title> to dimensions of folder
+    var adSizeRegExp = new RegExp('content="width=({{width}}|\\d{2,}), height=({{height}}|\\d{2,})"', 'g');
+    var titleRexExp = new RegExp('<title>(.*)<\/title>', 'g');
+    var indexContent = currentDirectory.read('index.html').toString();
+    indexContent = indexContent.replace(adSizeRegExp, 'content="width=' + size.width + ', height=' + size.height + '"');
+    indexContent = indexContent.replace(titleRexExp, '<title>Ad Banner: ' + size.width + 'x' + size.height + '</title>');
+    fs.write(currentDirectory.cwd() + '/index.html', indexContent);
+
+    // source.css -- set css variable width/height, if it exists
+    var source_css = 'assets/css/source.css';
+    if (!fs.exists(source_css)) { return; }
+    var styleContent = currentDirectory.read(source_css).toString();
+    styleContent = styleContent.replace(/{{width}}/g, size.width + 'px');
+    styleContent = styleContent.replace(/{{height}}/g, size.height + 'px');
+    fs.write(currentDirectory.cwd() + source_css, styleContent);
+});
+
+/* Update browser(s) when files change
 --------------------------------------------------------------------------- */
+gulp.task('browserSync', false, ['update:watch-directory'], function() {
+    browserSync({
+        server: { baseDir: watchFolder },
+        open: true,
+        notify: false,
+        rewriteRules: (flags.controls)? browserSyncRewriteRules : []
+    });
+});
+
+/* TASK: Review -- prep banners and build review page
+==================================================================================================== */
+gulp.task('clean:review', function(done) {
+    return del(['review/**/.*', 'review'], {force: true});
+});
+
 // pull remote template file, merge and put into `review` folder
-gulp.task('review', 'build review page from banner directories', ['preflight-package-json', 'directory-check', 'git:review-template'], function(done) {
-    var bannerHtml = [];
+gulp.task('review', 'build review page from banner directories', ['preflight:package.json', 'preflight:directory-check', 'preflight:banners-fallback-image', 'review-template:build'], function(done) {
 
     // Copy banners into review (only folders with dimensions in label)
     var bannerList = utils.getBanners();
@@ -146,105 +221,97 @@ gulp.task('review', 'build review page from banner directories', ['preflight-pac
     // remove unnecessary files/folders
     fs.find('review/banners', { matching: ['_dev-build'], files: false, directories: true }).forEach(fs.remove);
 
-    /* Review Template -- update content
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
-    var reviewDirectory = fs.cwd('./review');
-    var indexBody = reviewDirectory.read('index.html').toString();
-    var $ = cheerio.load(indexBody);
-
-    var title = $('title').text().replace('{{title}}', project.title);
-    $('title').text(title);
-    $('h3.headline').text(project.title);
-    // Update Tabs
-    var tpl_tab = $('#tab-item').html().replace(/^\s+/, '').replace(/\s+$/, '');
-    var tpl_tab_single = $('#tab-single-item').html().replace(/^\s+/, '').replace(/\s+$/, '');
-    $(bannerList).each(function(i, banner) {
-        bannerHtml.push(tpl_tab.replace('{{size}}', banner));
-    });
-    bannerHtml.push(tpl_tab_single.replace('{{size}}', bannerList[0]));
-    $('.tabs').html(bannerHtml.join(''));
-    $('#tab-item, #tab-single-item').remove(); // remove the templates from the index page
-    // write all the changes to the page
-    fs.write(reviewDirectory.cwd() + '/index.html', $.html());
-
     done();
+});
+
+gulp.task('review-template:build', false, function(done) {
+    sequence('clean:review', 'review-template:clone', 'review-template:update-directory', 'review-template:update-index', done);
 });
 
 /* Clone Review Template git repository and update with project-specific info
 --------------------------------------------------------------------------- */
-gulp.task('git:review-template', false, function(done) {
-    // clean up; remove any pre-existing `review` folder
-    utils.removeDirectory('review');
-
+gulp.task('review-template:clone', false, ['clean:review'], function(done) {
     // Clone Review Page repository and set up directory
     git.clone('https://github.com/misega/HTML5-Banners-Review-Site', {args: './review'}, function(err) {
         if (err) { console.log(err); }
-        // remove extra files
-        fs.remove('./review/README.md');
-        fs.remove('./review/source');
-        // move files to ./review root
-        var review = fs.cwd('./review/public');
-        review.move('./index.html', '../index.html');
-        review.move('./assets', '../assets');
-        fs.remove('./review/public');
-
-        done();
+        else { done(); }
     });
+});
+
+gulp.task('review-template:update-directory', false, function(done) {
+    // move files to ./review root
+    var review = fs.cwd('./review/public');
+    review.move('./index.html', '../index.html');
+    review.move('./assets', '../assets');
+    // remove extra files
+    del(['review/README.md', 'review/source', 'review/public', 'review/.*']);
+
+    done();
+});
+
+gulp.task('review-template:update-index', false, function(done) {
+    var bannerHtml = [];
+    var bannerList = utils.getBanners();
+
+    var updateIndex = function() {
+        return tap(function(file) {
+            var contents = file.contents.toString('utf-8');
+            var $ = cheerio.load(contents);
+
+            var title = $('title').text().replace('{{title}}', project.title);
+            $('title').text(title);
+            $('h3.headline').text(project.title);
+
+            // Update Tabs
+            var tpl_tab = $('#tab-item').html().replace(/^\s+/, '').replace(/\s+$/, '');
+            var tpl_tab_single = $('#tab-single-item').html().replace(/^\s+/, '').replace(/\s+$/, '');
+
+            $(bannerList).each(function(i, banner) {
+                var modifiedTime = utils.walkDirectory('./banners/' + banner).sort(function(a, b) { return b.modifyTime - a.modifyTime; });
+                var modifiedDate = new Date(modifiedTime[0].modifyTime).toISOString();
+
+                bannerHtml.push(
+                    tpl_tab
+                        .replace('{{type}}', 'iframe')
+                        .replace('{{filesize}}', fs.inspectTree('./banners/' + banner).size)
+                        .replace('{{modified}}', modifiedDate)
+                        .replace('{{size}}', banner)
+                );
+            });
+            bannerHtml.push(tpl_tab_single.replace('{{size}}', bannerList[0]));
+            $('.tabs').html(bannerHtml.join(''));
+            $('.tabs').find('input[type="radio"]').first().attr('checked', true);
+
+            $('#tab-item, #tab-single-item').remove(); // remove the templates from the index page
+            // write all the changes to the page
+            file.contents = new Buffer($.html());
+        });
+    };
+
+    return gulp
+        .src('./review/index.html')
+        .pipe(updateIndex())
+        .pipe(gulp.dest('./review'));
 });
 
 /* Task: Deploy -- prep banners and zip each directory for distribution
 --------------------------------------------------------------------------- */
+gulp.task('clean:deploy', false, function(done) {
+    return del(['deploy/**/.*', 'deploy/**/*'], {force: true});
+});
+gulp.task('clean:deploy-folders', false, ['clean:review'], function(done) {
+    return del.sync(['deploy/**/*', '!deploy/*.zip'], {force: true});
+});
+
 // loop through directories, clean up folders/files, zip up for distribution
-gulp.task('deploy', 'zip up banner directories for distribution', ['preflight-package-json', 'directory-check', 'review'], function(done) {
-    utils.removeDirectory('deploy');
+gulp.task('deploy', 'zip up banner directories for distribution', ['clean:deploy', 'review'], function(done) {
     fs.move('review/banners', 'deploy');
-    utils.removeDirectory('review');
-    // compress all files
-    sequence('zip');
-    // remove all directories
-    var banners = utils.getBanners();
-    banners.forEach(function(folder) {
-        utils.removeDirectory('./deploy/' + folder);
-    });
+    sequence('zip', 'clean:deploy-folders', done);
 });
 
-/* Watch a specific banner directory; use --flag to declare folder name
---------------------------------------------------------------------------- */
-gulp.task('watch', 'monitor files for changes', ['preflight-directory', 'styles', 'browserSync'], function(done) {
-    gulp.watch([devFolder + paths.html]).on('change', function() {
-        sequence('html', browserSync.reload);
-    });
-    gulp.watch([devFolder + paths.img]).on('change', function() {
-        sequence(browserSync.reload);
-    });
-    gulp.watch(devFolder + paths.css.source).on('change', function() {
-        sequence('styles', browserSync.reload);
-    });
-    gulp.watch(devFolder + paths.js).on('change', function() {
-        sequence(browserSync.reload);
-    });
-}, {
-    options: {
-        'folder': 'active directory to monitor (e.g. --folder 300x250)',
-        'controls': 'show banner controls; enables scrubbing through timeline'
-    }
-});
-
-/* Watch a specific banner directory; use --flag to declare folder name
---------------------------------------------------------------------------- */
-gulp.task('browserSync', false, function() {
-    browserSync({
-        server: { baseDir: devFolder },
-        open: true,
-        notify: false,
-        rewriteRules: (flags.controls)? browserSyncRewriteRules : []
-    });
-});
-
-/* Two actions: Zip up each directory, zip up all directories as one
---------------------------------------------------------------------------- */
-gulp.task('zip', false, function() {
-    var zipFolder = 'deploy';
+/* SUB-TASK: Two actions: Zip up each directory, zip up all directories as one
+==================================================================================================== */
+gulp.task('zip', false, function(done) {
     var folders = utils.getFolders(zipFolder);
 
     var singleZip = folders.map(function(folder) {
@@ -264,71 +331,17 @@ gulp.task('zip', false, function() {
     return merge(singleZip, groupZip);
 });
 
-/* Check to make sure there are directories with dimensions in label
- * Also check to make sure there are fallback images
---------------------------------------------------------------------------- */
-gulp.task('directory-check', false, function() {
-    var errorTitle = '';
-    var errorNote = '';
-    var errors = [];
-    var missingImages = [];
-
-    var bannerList = utils.getBanners();
-    if (!bannerList.length) {
-        errorTitle = gutil.colors.bgRed.white.bold('  Empty Banner Directory  ') + '\n\n';
-        errors.push(gutil.colors.red('\u2718') + gutil.colors.bold(' Banners') + ': missing\n\n');
-
-        var boilerplateExists = fs.exists('banners/' + defaults.folder);
-        if (boilerplateExists) {
-            errors.push('Copy ' + gutil.colors.cyan(defaults.folder) + ' and/or rename with banner size (e.g. 300x250)\n');
-            errors.push('Then run `gulp watch --folder 300x250` to build banners\n');
-        }
-    }
-    else {
-        errorTitle = gutil.colors.bgRed.white.bold('  Fallback Images  ') + '\n\n';
-        errorNote = gutil.colors.gray('\nFix any issues with the fallback image(s) before proceeding\n');
-        bannerList.forEach(function(banner) {
-            var fallback = fs.find('./banners/' + banner, { matching: ['fallback.*'] });
-            if (!fallback.length) { // no image found
-                errors.push(gutil.colors.red('\u2718 ') + gutil.colors.bold(banner) + ': missing fallback image\n');
-            }
-            else {
-                // Check for correct mime type of fallback image
-                if (!fallback[0].match(/jpg|gif|png/)) {
-                    errors.push(gutil.colors.red('\u2718 ') + gutil.colors.bold(banner) + ': wrong mimetype \u2192 ' + gutil.colors.red(fallback[0].split('.').pop().toUpperCase()) + '\n');
-                    errors.push('  - Allowed mime-types: ' + gutil.colors.cyan('JPG, GIF, PNG') + '\n');
-                }
-                else {
-                    var folderSize = utils.getDimensions(banner);
-                    var dimensions = sizeOf(fallback[0]);
-                    if (folderSize.width !== dimensions.width && folderSize.height !== dimensions.height) {
-                        errors.push(gutil.colors.red('\u2718 ') + gutil.colors.bold(banner) + ': fallback image size doesn\'t match\n');
-                        errors.push('  - folder size: ' + gutil.colors.cyan(folderSize.formatted) + '\n');
-                        errors.push('  - image size: ' + gutil.colors.cyan(dimensions.width + 'x' + dimensions.height) + '\n');
-                    }
-                }
-            }
-        });
-    }
-
-    if (errors.length) {
-        var msg = errorTitle + errors.join('') + errorNote + '\n';
-        console.log(utils.message(msg));
-        process.exit(1);
-    }
-});
-
 /* SUB-TASKS: Modify assets (html, images, styles, scripts) on change
 ==================================================================================================== */
 gulp.task('html', false, function(done) {
     return gulp
-        .src(devFolder + paths.html)
+        .src(watchFolder + paths.html)
         .pipe(plumber({ errorHandler: reportError }));
 });
 
 // gulp.task('assets', false, function() {
 //     return gulp
-//         .src(devFolder + paths.img);
+//         .src(watchFolder + paths.img);
 // });
 
 gulp.task('styles', false, function() {
@@ -341,24 +354,23 @@ gulp.task('styles', false, function() {
     ];
 
     return gulp
-        .src(devFolder + paths.css.source)
+        .src(watchFolder + paths.css.source)
         .pipe(plumber({ errorHandler: reportError }))
         .pipe(postcss(processors))
         .pipe(rename('style.css'))
-        .pipe(gulp.dest(devFolder + paths.css.destination));
+        .pipe(gulp.dest(watchFolder + paths.css.destination));
 });
 
 // gulp.task('scripts', false, function() {
 //     return gulp
-//         .src(devFolder + paths.script);
+//         .src(watchFolder + paths.script);
 // });
 
 /* SUB-TASKS: Preflight Checklist
 ==================================================================================================== */
-
-/* Setup: Make sure Package.json project info has been updated
+/* Make sure Package.json project meets minimum requirements before proceeding
 --------------------------------------------------------------------------- */
-gulp.task('preflight-package-json', false, function() {
+gulp.task('preflight:package.json', false, function() {
     var errors = [];
     var errorTitle = gutil.colors.bgRed.white.bold('  package.json  ') + '\n\nRequired Project Information:\n';
     var errorNote = '\nProject information will be displayed\non the generated review page.\nView ' + gutil.colors.cyan.italic('README.md') + ' for more details\n\n';
@@ -387,9 +399,9 @@ gulp.task('preflight-package-json', false, function() {
 
 /* Setup: Make sure folder is setup with banner dimensions
 --------------------------------------------------------------------------- */
-gulp.task('preflight-directory', false, ['preflight-package-json'], function() {
+gulp.task('preflight:watch-directory', false, function() {
     var errors = [];
-    var errorTitle = gutil.colors.bgRed.white.bold('  directory  ') + '\n\n';
+    var errorTitle = gutil.colors.bgRed.white.bold('  watch directory  ') + '\n\n';
     var isDirectory = fs.exists('banners/' + flags.folder);
 
     // Flag isn't set. If the folder isn't declared, we can't monitor changes.
@@ -416,27 +428,73 @@ gulp.task('preflight-directory', false, ['preflight-package-json'], function() {
         console.log(utils.message(msg));
         process.exit(1);
     }
+});
 
-    /* Directory Exists. Let's update the index page and style page to show the correct dimensions
-    --------------------------------------------------------------------------- */
-    var currentDirectory = fs.cwd('banners/' + flags.folder);
-    devFolder = currentDirectory.cwd();
-    // The directory is available, let's update files to match the directory name
-    var size = utils.getDimensions(flags.folder);
+/* Check to make sure there are directories with dimensions in label
+--------------------------------------------------------------------------- */
+gulp.task('preflight:directory-check', false, function() {
+    var errorTitle = '';
+    var errorNote = '';
+    var errors = [];
 
-    // index.html -- set <meta name="ad.size"> and <title> to dimensions of folder
-    var adSizeRegExp = new RegExp('content="width=({{width}}|\d{2,}), height=({{height}}|\d{2,})"', 'g');
-    var titleRexExp = new RegExp('<title>(.*)<\/title>', 'g');
-    var indexContent = currentDirectory.read('index.html').toString();
-    indexContent = indexContent.replace(adSizeRegExp, 'content="width=' + size.width + ', height=' + size.height + '"');
-    indexContent = indexContent.replace(titleRexExp, '<title>Ad Banner: ' + size.width + 'x' + size.height + '</title>');
-    fs.write(currentDirectory.cwd() + '/index.html', indexContent);
+    var bannerList = utils.getBanners();
+    if (!bannerList.length) {
+        errorTitle = gutil.colors.bgRed.white.bold('  Empty Banner Directory  ') + '\n\n';
+        errors.push(gutil.colors.red('\u2718') + gutil.colors.bold(' Banners') + ': missing\n\n');
 
-    // source.css -- set css variable width/height
-    var styleContent = currentDirectory.read('assets/css/source.css').toString();
-    styleContent = styleContent.replace(/{{width}}/g, size.width + 'px');
-    styleContent = styleContent.replace(/{{height}}/g, size.height + 'px');
-    fs.write(currentDirectory.cwd() + '/assets/css/source.css', styleContent);
+        var boilerplateExists = fs.exists('banners/' + defaults.folder);
+        if (boilerplateExists) {
+            errors.push('Copy ' + gutil.colors.cyan(defaults.folder) + ' and/or rename with banner size (e.g. 300x250)\n');
+            errors.push('Then run `gulp watch --folder 300x250` to build banners\n');
+        }
+    }
+
+    if (errors.length) {
+        var msg = errorTitle + errors.join('') + errorNote + '\n';
+        console.log(utils.message(msg));
+        process.exit(1);
+    }
+});
+
+/* Make sure each banner size has a fallback image
+--------------------------------------------------------------------------- */
+gulp.task('preflight:banners-fallback-image', false, function() {
+    var errorTitle = '';
+    var errorNote = '';
+    var errors = [];
+
+    var bannerList = utils.getBanners();
+    errorTitle = gutil.colors.bgRed.white.bold('  Fallback Images  ') + '\n\n';
+    errorNote = gutil.colors.gray('\nFix any issues with the fallback image(s) before proceeding\n');
+    bannerList.forEach(function(banner) {
+        var fallback = fs.find('./banners/' + banner, { matching: ['fallback.*'] });
+        if (!fallback.length) { // no image found
+            errors.push(gutil.colors.red('\u2718 ') + gutil.colors.bold(banner) + ': missing fallback image\n');
+        }
+        else {
+            // Check for correct mime type of fallback image
+            if (!fallback[0].match(/jpg|gif|png/)) {
+                errors.push(gutil.colors.red('\u2718 ') + gutil.colors.bold(banner) + ': wrong mimetype \u2192 ' + gutil.colors.red(fallback[0].split('.').pop().toUpperCase()) + '\n');
+                errors.push('  - Allowed mime-types: ' + gutil.colors.cyan('JPG, GIF, PNG') + '\n');
+            }
+            else {
+                // check for correct dimensions (possibly incorrect when copying folders but not updating fallback image)
+                var folderSize = utils.getDimensions(banner);
+                var dimensions = sizeOf(fallback[0]);
+                if (folderSize.width !== dimensions.width || folderSize.height !== dimensions.height) {
+                    errors.push(gutil.colors.red('\u2718 ') + gutil.colors.bold(banner) + ': fallback image size doesn\'t match\n');
+                    errors.push('  - folder size: ' + gutil.colors.cyan(folderSize.formatted) + '\n');
+                    errors.push('  - image size: ' + gutil.colors.cyan(dimensions.width + 'x' + dimensions.height) + '\n');
+                }
+            }
+        }
+    });
+
+    if (errors.length) {
+        var msg = errorTitle + errors.join('') + errorNote + '\n';
+        console.log(utils.message(msg));
+        process.exit(1);
+    }
 });
 
 /* SUB-TASKS: Error Reporting
