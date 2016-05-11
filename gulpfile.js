@@ -39,6 +39,8 @@ var browserSyncRewriteRules = [{
         return '<script src="assets/_dev-build/_banners.js"></script>';
     }
 }];
+// /`{3}script-lib([\s\S]*?)`{3}/g
+
 
 var project = {
     year: pkg.name.split('-')[0],
@@ -238,6 +240,8 @@ gulp.task('review-template:clone', false, ['clean:review'], function(done) {
     });
 });
 
+/* Move files around and delete unnecessary files/folders
+--------------------------------------------------------------------------- */
 gulp.task('review-template:update-directory', false, function(done) {
     // move files to ./review root
     var review = fs.cwd('./review/public');
@@ -249,6 +253,8 @@ gulp.task('review-template:update-directory', false, function(done) {
     done();
 });
 
+/* Update main review `index.html` page to show all banners and meta info
+--------------------------------------------------------------------------- */
 gulp.task('review-template:update-index', false, function(done) {
     var bannerHtml = [];
     var bannerList = utils.getBanners();

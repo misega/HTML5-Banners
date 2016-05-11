@@ -33,6 +33,17 @@
 | `$ gulp deploy` | Compress files and zip folders for distribution
 
 
+###ROADMAP
+
+------
+
+ - add flag to build either Sizmek or Doubleclick banners
+ - lint: html, css, js during build
+ - optimize on build: css, js, image assets (jpg, gif, svg)
+ - update to `gulp 4`
+
+------
+
 NPM Packages:<br>
 <https://github.com/Freyskeyd/gulp-prompt><br>
 POSTCSS:<br>
@@ -45,6 +56,9 @@ _deploy:_<br>
 
 <https://docs.npmjs.com/files/package.json#name>
 
+------
+
 <https://support.sizmek.com/hc/en-us/articles/206136366--reference-glossary-HTML5-Shared-Libraries><br>
 <http://www.richmediagallery.com/gallery><br>
 <http://www.richmediagallery.com/tools/starterfiles><br>
+<https://ihatetomatoes.net/product/greensock-101/><br>
