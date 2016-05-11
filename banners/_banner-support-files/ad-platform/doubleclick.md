@@ -28,7 +28,7 @@ function init() {
 function startAd() {
     document.getElementById('clickthrough-button').addEventListener('click', bgExitHandler, false);
     document.querySelector('.banner').style.display = 'block';
-    createMasterTimeline();
+    timeline.init();
 }
 
 var bgExitHandler = function(e) {
