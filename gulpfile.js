@@ -49,7 +49,8 @@ var project = {
     },
     get title() {
         return this.clientCode + ' ' + this.jobCode + ' ' + pkg.title;
-    }
+    },
+    review_template: 'https://github.com/misega/HTML5-Banners-Review-Site'
 };
 
 /* Setup: Initial values from banner boilerplate
@@ -232,7 +233,7 @@ gulp.task('review-template:build', false, function(done) {
 --------------------------------------------------------------------------- */
 gulp.task('review-template:clone', false, ['clean:review'], function(done) {
     // Clone Review Page repository and set up directory
-    git.clone('https://github.com/misega/HTML5-Banners-Review-Site', {args: './review'}, function(err) {
+    git.clone(project.review_template, {args: './review'}, function(err) {
         if (err) { console.log(err); }
         else { done(); }
     });
