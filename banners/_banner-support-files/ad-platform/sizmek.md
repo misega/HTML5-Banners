@@ -20,7 +20,7 @@ function initEB() {
 function startAd() {
     document.getElementById('clickthrough-button').addEventListener('click', clickthru, false);
     document.querySelector('.banner').style.display = 'block';
-    createMasterTimeline();
+    timeline.init();
 }
 
 var clickthru = function(e) {

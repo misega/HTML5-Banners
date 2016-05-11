@@ -39,8 +39,6 @@ var browserSyncRewriteRules = [{
         return '<script src="assets/_dev-build/_banners.js"></script>';
     }
 }];
-// /`{3}script-lib([\s\S]*?)`{3}/g
-
 
 var project = {
     year: pkg.name.split('-')[0],
@@ -84,6 +82,9 @@ var utils = {
     },
     message: function(msg) {
         return utils.divider() + msg + utils.divider();
+    },
+    trim: function(str) {
+        return str.replace(/^\s+/, '').replace(/\s+$/, '');
     },
     getFolders: function(dir) {
         var folders = [];
@@ -180,11 +181,11 @@ gulp.task('update:watch-directory', false, function() {
 
     // source.css -- set css variable width/height, if it exists
     var source_css = 'assets/css/source.css';
-    if (!fs.exists(source_css)) { return; }
+    if (!fs.exists(watchFolder + '/' + source_css)) { return; }
     var styleContent = currentDirectory.read(source_css).toString();
-    styleContent = styleContent.replace(/{{width}}/g, size.width + 'px');
-    styleContent = styleContent.replace(/{{height}}/g, size.height + 'px');
-    fs.write(currentDirectory.cwd() + source_css, styleContent);
+    styleContent = styleContent.replace(/\$width:\s?({{width}}|\d{2,}px);/g, '$width: ' + size.width + 'px;');
+    styleContent = styleContent.replace(/\$height:\s?({{height}}|\d{2,}px);/g, '$height: ' + size.height + 'px;');
+    fs.write(watchFolder + '/' + source_css, styleContent);
 });
 
 /* Update browser(s) when files change
@@ -219,9 +220,6 @@ gulp.task('review', 'build review page from banner directories', ['preflight:pac
         var ext = image.split('.').pop();
         fs.rename(image, project.name + '_' + utils.getDimensions(image).formatted + '.' + ext);
     });
-
-    // remove unnecessary files/folders
-    fs.find('review/banners', { matching: ['_dev-build'], files: false, directories: true }).forEach(fs.remove);
 
     done();
 });
@@ -269,8 +267,8 @@ gulp.task('review-template:update-index', false, function(done) {
             $('h3.headline').text(project.title);
 
             // Update Tabs
-            var tpl_tab = $('#tab-item').html().replace(/^\s+/, '').replace(/\s+$/, '');
-            var tpl_tab_single = $('#tab-single-item').html().replace(/^\s+/, '').replace(/\s+$/, '');
+            var tpl_tab = utils.trim($('#tab-item').html());
+            var tpl_tab_single = utils.trim($('#tab-single-item').html());
 
             $(bannerList).each(function(i, banner) {
                 var modifiedTime = utils.walkDirectory('./banners/' + banner).sort(function(a, b) { return b.modifyTime - a.modifyTime; });
@@ -309,10 +307,60 @@ gulp.task('clean:deploy-folders', false, ['clean:review'], function(done) {
     return del.sync(['deploy/**/*', '!deploy/*.zip'], {force: true});
 });
 
+gulp.task('inject:ad-platform', false, function(done) {
+    var errors = [];
+    var errorTitle = gutil.colors.bgRed.white.bold('  advertising platform  ') + '\n\n';
+    var platform = flags.platform.toLowerCase();
+
+    if (!flags.platform) {
+        errors.push(gutil.colors.red('\u2718') + gutil.colors.bold(' ad platform flag') + ': missing\n');
+        errors.push('platform options: ' + gutil.colors.cyan('doubleclick') + ' or ' +  gutil.colors.cyan('sizmek') + '\n\n');
+        errors.push(gutil.colors.gray('e.g. gulp deploy --platform doubleclick\n'));
+        errors.push(gutil.colors.gray('e.g. gulp deploy --platform sizmek\n\n'));
+
+        console.log(utils.message(errorTitle + errors.join('')));
+        process.exit(1);
+    }
+
+    var supportFiles = fs.cwd('./banners/_banner-support-files/ad-platform/');
+    var markdown = supportFiles.read(flags.platform + '.md').toString();
+
+    var getAdScript = function(type) {
+        var adScriptRegEx = new RegExp('`{3}script-' + type + '([\\s\\S]+?)`{3}\\n', 'g');
+        var adScriptStr = markdown.slice().match(adScriptRegEx)[0].replace(adScriptRegEx, '$1');
+        return utils.trim(adScriptStr);
+    };
+
+    var injectAdPlatform = function() {
+        return tap(function(file) {
+            var filename = path.basename(file.relative);
+
+            if (filename === 'index.html') {
+                var adScriptLib = file.contents.toString().replace('<!-- {inject:ad-platform-lib-url} -->', getAdScript('lib'));
+                file.contents = new Buffer(adScriptLib);
+            }
+
+            if (filename === 'script.js') {
+                var adScriptInit = file.contents.toString().replace('timeline.init();', getAdScript('init'));
+                file.contents = new Buffer(adScriptInit);
+
+                if (platform === 'sizmek') { // move init file into folder
+                    fs.copy(supportFiles.cwd() + '/EBLoader.js', path.parse(file.path).dir + '/EBLoader.js', { overwrite: true });
+                }
+            }
+        });
+    };
+
+    return gulp
+        .src(['./deploy/**/index.html', './deploy/**/script.js'])
+        .pipe(injectAdPlatform())
+        .pipe(gulp.dest('./deploy'));
+});
+
 // loop through directories, clean up folders/files, zip up for distribution
 gulp.task('deploy', 'zip up banner directories for distribution', ['clean:deploy', 'review'], function(done) {
     fs.move('review/banners', 'deploy');
-    sequence('zip', 'clean:deploy-folders', done);
+    sequence('inject:ad-platform', 'zip', 'clean:deploy-folders', done);
 });
 
 /* SUB-TASK: Two actions: Zip up each directory, zip up all directories as one
