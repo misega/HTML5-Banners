@@ -45,4 +45,6 @@ _deploy:_<br>
 
 <https://docs.npmjs.com/files/package.json#name>
 
-<https://support.sizmek.com/hc/en-us/articles/206136366--reference-glossary-HTML5-Shared-Libraries>
+<https://support.sizmek.com/hc/en-us/articles/206136366--reference-glossary-HTML5-Shared-Libraries><br>
+<http://www.richmediagallery.com/gallery><br>
+<http://www.richmediagallery.com/tools/starterfiles><br>
