@@ -7,18 +7,18 @@ Project boilerplate for creating HTML5 animated banners with [GSAP](http://green
 [Download Banner Boilerplate](https://github.com/misega/HTML5-Banners/archive/master.zip)
 
 * Watch a specific banner folder for changes and update browser during development
-* Compiles CSS variables and automatically adds vendor prefixes via `POSTCSS`
-* Lints HTML, CSS, and JS files to maintain coding standards
+* Compile CSS variables and automatically adds vendor prefixes via `POSTCSS`
+* Lint HTML, CSS, and JS files to maintain coding standards
 * Verify each banner has a fallback image and is the appropriate size
-* Automatically generate review site
+* Generate review site
 * Update all banners to platform-specific distribution (e.g. DoubleClick, Sizmek)
-* Automatically minifies files and assets then creates directory of zip files for distribution
+* Minify files and assets then create directory of zip files for distribution
 
-**In This Documentation**
-
+###In This Documentation
 1. [Getting Started](#gettingstarted)
 2. [File Structure](#filestructure)
-3. [Resources & References](#resourcesreferences)
+3. [Resources](#resources)
+4. [References](#references)
 
 ## Getting Started
 
@@ -29,16 +29,18 @@ Make sure these are installed first.
 * [Gulp](http://gulpjs.com) `sudo npm install -g gulp`
 
 ### Quick Start
-1. In bash/terminal/command line, `cd` into your project directory.
-2. Run `npm install` to install required files.
-3. When it's done installing, run one of the task runners to get going:
+1. Open `banners` folder.
+2. Inside, rename `_banner-template` with the banner size (e.g. `300x250`)
+3. In bash/terminal/command line, `cd` into your project directory.
+4. Run `npm install` to install required files.
+5. When it's done installing, run one of the tasks to get going:
 
 |Tasks ||
 |:----|----|
-| `$ gulp` | Will show all available tasks
-| `$ gulp watch`<br>`--folder`<br>`--controls` | Watch files for changes and update browser<br>_flag:_ folder to watch for file changes<br>_flag:_ controls to play/pause & scrub timeline
-| `$ gulp review` | Build review page; ready to push to review ftp
-| `$ gulp deploy`<br>`--platform` | Compress files and zip folders for distribution<br>_flag:_ ad platform distribution (`doubleclick`,`sizmek`)
+| `gulp` | Will show all available tasks
+| `gulp watch`<br>`--folder`<br>`--controls` | Watch files for changes and update browser<br>_flag:_ folder to watch for file changes<br>_flag:_ controls to play/pause & scrub timeline
+| `gulp review` | Build review page; ready to push to review ftp
+| `gulp deploy`<br>`--platform` | Compress files and zip folders for distribution<br>_flag:_ ad platform distribution (`doubleclick`,`sizmek`)
 
 #### Update _package.json_
 * **name**: Project Code (format: YY-aaa-9999). Information used throughout the build/review/deploy process
@@ -56,7 +58,7 @@ Make sure these are installed first.
 ├── package.json                # list of npm packages and some configurations
 ├── gulp.js                     # build configuration
 ├── node_modules/               # will be created with `npm install`
-└─┬ _banners/                   # directory to contain all banner sizes
+└─┬ banners/                   # directory to contain all banner sizes
   ├─┬ _banner-support-files/
   │ ├─┬ ad-platform/            # collection of platform-specific documentation
   │ │ ├── doubleclick.md        # documentation; script blocks will be injected via `deploy` task
@@ -80,11 +82,23 @@ Make sure these are installed first.
         └── script.js           # customized banner animation script
 ```
 
-## Resources & References
-<https://support.sizmek.com/hc/en-us/articles/206136366--reference-glossary-HTML5-Shared-Libraries><br>
-<http://www.richmediagallery.com/gallery><br>
-<http://www.richmediagallery.com/tools/starterfiles><br>
+## Resources
 <https://ihatetomatoes.net/product/greensock-101/><br>
+
+## References
+**IAB.com**<br>
+[iab.com/guidelines](http://www.iab.com/guidelines/)<br>
+[iab.com - HTML5 for Digital Advertising 2.0](http://www.iab.com/wp-content/uploads/2016/04/HTML5forDigitalAdvertising2.0.pdf) <small>PDF</small><br>
+[iab.com - Display Format Guidelines](http://www.iab.com/wp-content/uploads/2015/11/IAB_Display_Mobile_Creative_Guidelines_HTML5_2015.pdf) <small>PDF</small><br>
+<br>
+**DoubleClick**<br>
+[DoubleClick Starter Files](http://www.richmediagallery.com/tools/starterfiles)<br>
+[Rich Media Gallery](http://www.richmediagallery.com/gallery)<br>
+<br>
+**Sizmek**<br>
+[Sizmek Banner Formats](http://showcase.sizmek.com/formats)<br>
+[Building Ads / Creating HTML5 Banners](https://support.sizmek.com/hc/en-us/categories/200103329--creative-Building-Ads-Creating-HTML5-Ads)<br>
+[Sizmek CDN/Shared Libraries](https://support.sizmek.com/hc/en-us/articles/206136366--reference-glossary-HTML5-Shared-Libraries)<br>
 
 ## Roadmap
 
