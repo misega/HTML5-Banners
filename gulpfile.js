@@ -33,12 +33,13 @@ var flags = require('minimist')(process.argv.slice(2));
 var watchFolder = '';
 var zipFolder = 'deploy';
 var sizeRegExp = new RegExp('(\\d{2,}x\\d{2,})', 'g');
-var browserSyncRewriteRules = [{
-    match: /<!-- {inject:banner-controls} -->/ig,
-    fn: function(match) {
-        return '<script src="assets/_dev-build/_banners.js"></script>';
-    }
-}];
+var browserSyncRewriteRules = [];
+// var browserSyncRewriteRules = [{
+//     match: /<!-- {inject:banner-controls} -->/ig,
+//     fn: function(match) {
+//         return '<script src="assets/_dev-build/_banners.js"></script>';
+//     }
+// }];
 
 var project = {
     year: pkg.name.split('-')[0],
@@ -404,8 +405,8 @@ gulp.task('styles', false, function() {
         autoprefixer({ browsers: ['> 1%', 'last 3 versions', 'ie >= 9', 'ios >= 7', 'android >= 4.4']}),
         variables(),
         position(),
-        calc()
-        //sorting({ 'sort-order': 'zen' })
+        calc(),
+        sorting({ 'sort-order': 'zen' })
     ];
 
     return gulp
