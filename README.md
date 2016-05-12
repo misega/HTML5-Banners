@@ -102,8 +102,9 @@ Make sure these are installed first.
 
 ## Roadmap
 
- - lint: html, css, js during build
- - optimize on build: css, js, image assets (jpg, gif, svg)
+ - lint on `watch`: html, css, js
+ - minify on `build`: html, css, js
+ - optimize on `build`: image assets (jpg, gif, svg)
  - move tasks into a gulp subfolder and separate files
  - update to `gulp 4`
 
