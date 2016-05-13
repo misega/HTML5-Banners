@@ -83,7 +83,9 @@ Make sure these are installed first.
 ```
 
 ## Resources
-<https://ihatetomatoes.net/product/greensock-101/><br>
+**Greensock/GSAP**<br>
+[Greensock 101 - Greensock Tutorials for Beginners](https://ihatetomatoes.net/product/greensock-101/)<br>
+[Greensock Cheat Sheet](https://ihatetomatoes.net/wp-content/uploads/2015/08/GreenSock-Cheatsheet-2.pdf) <small>PDF</small><br>
 
 ## References
 **IAB.com**<br>
@@ -107,13 +109,3 @@ Make sure these are installed first.
  - optimize on `build`: image assets (jpg, gif, svg)
  - move tasks into a gulp subfolder and separate files
  - update to `gulp 4`
-
-------
-
-NPM Packages:<br>
-POSTCSS:<br>
-_review:_<br>
-<https://github.com/stylelint/stylelint><br>
-_deploy:_<br>
-<https://github.com/ben-eb/cssnano><br>
-<https://github.com/ben-eb/postcss-svgo>
