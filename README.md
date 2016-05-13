@@ -95,6 +95,7 @@ Make sure these are installed first.
 <br>
 **DoubleClick**<br>
 [DoubleClick Starter Files](http://www.richmediagallery.com/tools/starterfiles)<br>
+[DoubleClick CDN/Shared Libraries](https://support.google.com/richmedia/answer/6307288)<br>
 [Rich Media Gallery](http://www.richmediagallery.com/gallery)<br>
 <br>
 **Sizmek**<br>
