@@ -33,13 +33,12 @@ var flags = require('minimist')(process.argv.slice(2));
 var watchFolder = '';
 var zipFolder = 'deploy';
 var sizeRegExp = new RegExp('(\\d{2,}x\\d{2,})', 'g');
-var browserSyncRewriteRules = [];
-// var browserSyncRewriteRules = [{
-//     match: /<!-- {inject:banner-controls} -->/ig,
-//     fn: function(match) {
-//         return '<script src="assets/_dev-build/_banners.js"></script>';
-//     }
-// }];
+var browserSyncRewriteRules = [{
+    match: /<!-- {inject:banner-controls} -->/ig,
+    fn: function(match) {
+        return '<script src="assets/_banner-support-files/controls/_banners.js"></script>';
+    }
+}];
 
 var project = {
     year: pkg.name.split('-')[0],
@@ -165,7 +164,7 @@ gulp.task('watch', 'monitor files for changes', ['preflight:watch-directory', 'u
     }
 });
 
-gulp.task('update:watch-directory', false, function() {
+gulp.task('update:watch-directory', false, function(done) {
     /* Directory Exists. Let's update the index page and style page to show the correct dimensions
     --------------------------------------------------------------------------- */
     var currentDirectory = fs.cwd('banners/' + flags.folder);
@@ -188,6 +187,21 @@ gulp.task('update:watch-directory', false, function() {
     styleContent = styleContent.replace(/\$width:\s?({{width}}|\d{2,}px);/g, '$width: ' + size.width + 'px;');
     styleContent = styleContent.replace(/\$height:\s?({{height}}|\d{2,}px);/g, '$height: ' + size.height + 'px;');
     fs.write(watchFolder + '/' + source_css, styleContent);
+
+    /* Controls: Add folder, if flag is active; remove, if not
+    --------------------------------------------------------------------------- */
+    var controls = '_banner-support-files/controls';
+    var controlsFolder = watchFolder + '/assets/' + controls;
+    var hasControlsFolder = fs.exists(controlsFolder);
+    if (!flags.controls && hasControlsFolder) {
+        fs.remove(watchFolder + '/assets/_banner-support-files');
+    }
+
+    if (flags.controls && !hasControlsFolder) {
+        fs.copy('./banners/' + controls, controlsFolder);
+    }
+
+    done();
 });
 
 /* Update browser(s) when files change
@@ -215,6 +229,8 @@ gulp.task('review', 'build review page from banner directories', ['preflight:pac
     bannerList.forEach(function(item) {
         var banner = './review/banners/' + item;
         fs.copy('./banners/' + item, banner);
+        // remove controls, used during development
+        fs.remove(banner + '/assets/_banner-support-files');
     });
 
     // rename fallback image
@@ -522,6 +538,7 @@ gulp.task('preflight:banners-fallback-image', false, function() {
     var bannerList = utils.getBanners();
     errorTitle = gutil.colors.bgRed.white.bold('  Fallback Images  ') + '\n\n';
     errorNote = gutil.colors.gray('\nFix any issues with the fallback image(s) before proceeding\n');
+    errorNote += gutil.colors.gray('Ensure each image is named') + ' ' + gutil.colors.cyan('fallback') + '\n'
     bannerList.forEach(function(banner) {
         var fallback = fs.find('./banners/' + banner, { matching: ['fallback.*'] });
         if (!fallback.length) { // no image found

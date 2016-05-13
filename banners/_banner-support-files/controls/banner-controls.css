@@ -7,6 +7,7 @@
     padding: 0;
     list-style: none;
     height: 50px;
+    font-family: Calibri, Candara, Segoe, "Segoe UI", Optima, Arial, sans-serif;
     white-space: nowrap;
     background: #111;
     cursor: default;
