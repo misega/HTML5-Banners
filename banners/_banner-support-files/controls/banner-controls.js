@@ -1,4 +1,4 @@
-/* global timeline, Dragdealer */
+/* global Zepto, timeline, Dragdealer */
 (function($) {
     'use strict';
 
@@ -6,7 +6,19 @@
         var defaults = {};
 
         var $element = $(element);
-        var $win = $(window);
+        var $iframe = $('.banner-content');
+        var $window = ($iframe.length) ? $iframe[0].contentWindow : window;
+
+        var timelineReady = function() {
+            var deferred = $.Deferred();
+
+            (function waitForTimeline() {
+                if ($window.timeline) { deferred.resolve(); }
+                else { setTimeout(waitForTimeline, 250); }
+            })();
+
+            return deferred.promise();
+        };
 
         /* Control HTML structure
         --------------------------------------------------------------------------- */
@@ -31,8 +43,8 @@
             ----------------------------------------------------------------------- */
             var activeSlider = false;
             var hasCompleted = false;
-            var timeline = window.timeline;
-            var $controls = $(tml_controls).appendTo('body');
+            var timeline = $window.timeline;
+            var $controls = $(tml_controls).appendTo($element);
             var $btnPlayPause = $controls.find('.btn-play-pause');
             var $timeCurrent = $controls.find('.time-current');
             var $timeTotal = $controls.find('.time-total');
@@ -43,16 +55,18 @@
 
             /* Event Listeners: Play/Pause Button
             ----------------------------------------------------------------------- */
-            $(window).on('start', function(e) {
+            $window.addEventListener('start', function(e) {
                 if (e.detail.hasStarted) {
                     $btnPlayPause.parent().addClass('pause');
                 }
-            }).on('complete', function(e) {
+            }, false);
+
+            $window.addEventListener('complete', function(e) {
                 if (e.detail.hasStopped) {
                     $btnPlayPause.parent().removeClass('pause');
                     hasCompleted = true;
                 }
-            });
+            }, false);
 
             $btnPlayPause.on('click', function() {
                 $(this).parent().toggleClass('pause');
@@ -82,30 +96,30 @@
                 activeSlider = false;
             });
 
-            /* Event Listeners: Update Time Display and Progress Bar
-            ----------------------------------------------------------------------- */
-            $(window).on('stats', function(e) {
+            // /* Event Listeners: Update Time Display and Progress Bar
+            // ----------------------------------------------------------------------- */
+            $window.addEventListener('stats', function(e) {
                 var duration = e.detail;
                 $progressbarTotal.width((duration.totalProgress * 100) + '%');
                 $progressbarThumb.setValue(duration.totalProgress, 0, true);
                 $timeCurrent.text(duration.totalTime.toFixed(2));
                 $timeTotal.text(duration.totalDuration.toFixed(2));
-            });
+            }, false);
         };
 
         /* Init
         --------------------------------------------------------------------------- */
-        (function waitForTimeline() {
-            if (window.timeline) {
-                setTimeout(plugin.init);
-            }
-            else {
-                setTimeout(waitForTimeline, 25);
-            }
-        })();
+        if ($iframe.length) {
+            $iframe.on('load', function() {
+                timelineReady().done(plugin.init);
+            });
+        }
+        else {
+            timelineReady().done(plugin.init);
+        }
     };
 
-    /* Attach as jQuery Plugin
+    /* Attach as a plugin
     --------------------------------------------------------------------------- */
     $.fn.banner_controls = function(options) {
         return this.each(function() {
@@ -116,4 +130,4 @@
         });
     };
 
-})(jQuery);
+})(Zepto);
