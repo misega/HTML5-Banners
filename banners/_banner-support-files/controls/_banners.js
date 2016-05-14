@@ -12,7 +12,6 @@
 var path = 'assets/_banner-support-files/controls/';
 
 basket.require(
-    { url: path + 'lib/zepto.min.js', key: 'zepto', unique: 'v1.1.6' },
     { url: path + 'lib/create-stylesheet.min.js', unique: 'v0.2.1' },
     { url: path + 'lib/dragdealer.min.js', unique: 'v0.9.8' },
     { url: path + 'banner-controls.js', key: 'controls', unique: 'v0.1.0' },
@@ -21,7 +20,8 @@ basket.require(
     _stylesheet.appendStyleSheet(basket.get('styles').data, function(err, style) {
         if (err) { console.error(err); }
         else {
-            $('body').banner_controls();
+            var container = ($('html').is('.in-review'))? '.banner-container' : 'body';
+            $(container).banner_controls();
         }
     });
 });

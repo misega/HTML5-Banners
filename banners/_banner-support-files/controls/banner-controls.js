@@ -1,133 +1,137 @@
-/* global Zepto, timeline, Dragdealer */
-(function($) {
-    'use strict';
+/* global Promise, timeline, Dragdealer */
 
-    $.banner_controls = function(element, options) {
-        var defaults = {};
+// Bling.js
+// https://gist.github.com/paulirish/12fb951a8b893a454b32
+// ====================================================================================================
+window.$ = document.querySelector.bind(document);
+window.$$ = document.querySelectorAll.bind(document);
+Node.prototype.on = window.on = function(name, fn) {
+    this.addEventListener(name, fn);
+};
+NodeList.prototype.__proto__ = Array.prototype;
+NodeList.prototype.on = NodeList.prototype.addEventListener = function(name, fn) {
+    this.forEach(function(elem, i) {
+        elem.on(name, fn);
+    });
+};
 
-        var $element = $(element);
-        var $iframe = $('.banner-content');
-        var $window = ($iframe.length) ? $iframe[0].contentWindow : window;
+// ====================================================================================================
+var banner_controls = (function() {
+    var activeSlider = false;
+    var hasCompleted = false;
 
-        var timelineReady = function() {
-            var deferred = $.Deferred();
+    var $element;
+    var $iframe = $('.banner-content');
+    var $window = ($iframe.length) ? $iframe[0].contentWindow : window;
 
-            (function waitForTimeline() {
-                if ($window.timeline) { deferred.resolve(); }
-                else { setTimeout(waitForTimeline, 250); }
-            })();
+    var timelineReady = new Promise(function(resolve, reject) {
+        (function waitForTimeline() {
+            if ($window.timeline) { resolve(); }
+            else { setTimeout(waitForTimeline, 250); }
+        })();
+    });
 
-            return deferred.promise();
-        };
-
-        /* Control HTML structure
-        --------------------------------------------------------------------------- */
-        var tml_controls = '' +
-            '<ul class="banner-controls">' +
-            '    <li class="play-pause"><button class="btn-play-pause" type="button"><div class="icon-play-pause"></div></button></li>' +
-            '    <li class="duration"><span class="time-current">00.00</span> / <span class="time-total">00.00</span></li>' +
-            '    <li class="progress">' +
-            '        <div class="progress-bar">' +
-            '            <div class="total"></div>' +
-            '            <div class="thumb handle"></div>' +
-            '        </div>' +
-            '    </li>' +
-            '</ul>';
-
-        var plugin = this;
-        plugin.settings = {};
-        plugin.init = function() {
-            plugin.settings = $.extend({}, defaults, options);
-
-            /* Cache Control Elements
-            ----------------------------------------------------------------------- */
-            var activeSlider = false;
-            var hasCompleted = false;
-            var timeline = $window.timeline;
-            var $controls = $(tml_controls).appendTo($element);
-            var $btnPlayPause = $controls.find('.btn-play-pause');
-            var $timeCurrent = $controls.find('.time-current');
-            var $timeTotal = $controls.find('.time-total');
-
-            var $progressbarThumb;
-            var $progressbar = $controls.find('.progress-bar');
-            var $progressbarTotal = $progressbar.find('.total');
-
-            /* Event Listeners: Play/Pause Button
-            ----------------------------------------------------------------------- */
-            $window.addEventListener('start', function(e) {
-                if (e.detail.hasStarted) {
-                    $btnPlayPause.parent().addClass('pause');
-                }
-            }, false);
-
-            $window.addEventListener('complete', function(e) {
-                if (e.detail.hasStopped) {
-                    $btnPlayPause.parent().removeClass('pause');
-                    hasCompleted = true;
-                }
-            }, false);
-
-            $btnPlayPause.on('click', function() {
-                $(this).parent().toggleClass('pause');
-
-                if (hasCompleted) {
-                    hasCompleted = false;
-                    timeline.get().restart();
-                    return;
-                }
-
-                timeline.get().paused(!timeline.get().paused());
-            });
-
-            /* Event Listeners: Progress Bar / Thumb
-            ----------------------------------------------------------------------- */
-            $progressbarThumb = new Dragdealer($progressbar[0], {
-                animationCallback: function(x, y) {
-                    timeline.get().totalProgress(x);
-                }
-            });
-
-            $progressbar.add($progressbar.find('.thumb')).mousedown(function() {
-                activeSlider = true;
-                if (!timeline.get().paused()) { timeline.get().pause(); }
-                $btnPlayPause.parent().removeClass('pause');
-            }).mouseup(function() {
-                activeSlider = false;
-            });
-
-            // /* Event Listeners: Update Time Display and Progress Bar
-            // ----------------------------------------------------------------------- */
-            $window.addEventListener('stats', function(e) {
-                var duration = e.detail;
-                $progressbarTotal.width((duration.totalProgress * 100) + '%');
-                $progressbarThumb.setValue(duration.totalProgress, 0, true);
-                $timeCurrent.text(duration.totalTime.toFixed(2));
-                $timeTotal.text(duration.totalDuration.toFixed(2));
-            }, false);
-        };
-
-        /* Init
-        --------------------------------------------------------------------------- */
-        if ($iframe.length) {
-            $iframe.on('load', function() {
-                timelineReady().done(plugin.init);
-            });
-        }
-        else {
-            timelineReady().done(plugin.init);
-        }
+    var attachControls = function(selector) {
+        var element = selector || 'body';
+        $element = $(element);
     };
 
-    /* Attach as a plugin
-    --------------------------------------------------------------------------- */
-    $.fn.banner_controls = function(options) {
-        return this.each(function() {
-            if ($(this).data('banner_controls') === undefined) {
-                var plugin = new $.banner_controls(this, options);
-                $(this).data('banner_controls', plugin);
+    /* Control HTML structure
+    ----------------------------------------------------------------------- */
+    var tml_controls = '' +
+        '<ul class="banner-controls">' +
+        '    <li class="play-pause"><button class="btn-play-pause" type="button"><div class="icon-play-pause"></div></button></li>' +
+        '    <li class="duration"><span class="time-current">00.00</span> / <span class="time-total">00.00</span></li>' +
+        '    <li class="progress">' +
+        '        <div class="progress-bar">' +
+        '            <div class="total"></div>' +
+        '            <div class="thumb handle"></div>' +
+        '        </div>' +
+        '    </li>' +
+        '</ul>';
+
+    function buildControls() {
+        attachControls();
+        /* Cache Control Elements
+        ----------------------------------------------------------------------- */
+        var activeSlider = false;
+        var hasCompleted = false;
+        var timeline = $window.timeline;
+        var $controls = $element.appendChild(tml_controls);
+        var $btnPlayPause = $('.banner-controls .btn-play-pause');
+        var $timeCurrent = $('.banner-controls .time-current');
+        var $timeTotal = $('.banner-controls .time-total');
+
+        var $progressbarThumb;
+        var $progressbar = $('.banner-controls .progress-bar');
+        var $progressbarTotal = $progressbar.querySelector('.total');
+
+        /* Event Listeners: Play/Pause Button
+        ----------------------------------------------------------------------- */
+        $window.addEventListener('start', function(e) {
+            if (e.detail.hasStarted) {
+                $btnPlayPause.parentNode.classList.add('pause');
+            }
+        }, false);
+
+        $window.addEventListener('complete', function(e) {
+            if (e.detail.hasStopped) {
+                $btnPlayPause.parentNode.classList.remove('pause');
+                hasCompleted = true;
+            }
+        }, false);
+
+        // $btnPlayPause.on('click', function() {
+        //     $(this).parent().toggleClass('pause');
+
+        //     if (hasCompleted) {
+        //         hasCompleted = false;
+        //         timeline.get().restart();
+        //         return;
+        //     }
+
+        //     timeline.get().paused(!timeline.get().paused());
+        // });
+
+        /* Event Listeners: Progress Bar / Thumb
+        ----------------------------------------------------------------------- */
+        $progressbarThumb = new Dragdealer($progressbar, {
+            animationCallback: function(x, y) {
+                timeline.get().totalProgress(x);
             }
         });
-    };
 
-})(Zepto);
+        // $progressbar.add($progressbar.find('.thumb')).mousedown(function() {
+        //     activeSlider = true;
+        //     if (!timeline.get().paused()) { timeline.get().pause(); }
+        //     $btnPlayPause.parentNode.classList.remove('pause');
+        // }).mouseup(function() {
+        //     activeSlider = false;
+        // });
+
+        /* Event Listeners: Update Time Display and Progress Bar
+        ----------------------------------------------------------------------- */
+        $window.addEventListener('stats', function(e) {
+            var duration = e.detail;
+            $progressbarTotal.style.width = (duration.totalProgress * 100) + '%';
+            $progressbarThumb.setValue(duration.totalProgress, 0, true);
+            $timeCurrent.textContent = duration.totalTime.toFixed(2);
+            $timeTotal.textContent = duration.totalDuration.toFixed(2);
+        }, false);
+    }
+
+    /* Init
+    --------------------------------------------------------------------------- */
+    if ($iframe.length) {
+        $iframe.addEventListener('load', function() {
+            timelineReady().then(buildControls);
+        }, false);
+    }
+    else {
+        timelineReady().then(buildControls);
+    }
+
+    return {
+        attach: attachControls
+    };
+})();

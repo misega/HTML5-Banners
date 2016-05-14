@@ -14,6 +14,10 @@
     opacity: 0.9;
 }
 
+.in-review {
+    position: absolute;
+}
+
 .play-pause {
     float: left;
     width: 50px;
@@ -28,6 +32,8 @@
     background: #111;
     border: none;
     cursor: pointer;
+    outline-style: none;
+    box-shadow: none;
 }
 
 .icon-play-pause {
