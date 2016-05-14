@@ -144,18 +144,18 @@ gulp.task('default', function(done) {
 
 /* TASK: Watch -- Watch a specific banner directory for changes; set flag `--folder {name}`
 ==================================================================================================== */
-gulp.task('watch', 'monitor files for changes', ['preflight:watch-directory', 'update:watch-directory', 'styles', 'browserSync:watch'], function(done) {
+gulp.task('watch', 'monitor files for changes', ['preflight:watch-directory', 'update:watch-directory', 'styles', 'browserSync'], function(done) {
     gulp.watch([watchFolder + paths.html]).on('change', function() {
         sequence('html', browserSync.reload);
     });
     gulp.watch([watchFolder + paths.img]).on('change', function() {
-        sequence(browserSync.reload);
+        sequence('assets', browserSync.reload);
     });
     gulp.watch(watchFolder + paths.css.source).on('change', function() {
         sequence('styles', browserSync.reload);
     });
     gulp.watch(watchFolder + paths.js).on('change', function() {
-        sequence(browserSync.reload);
+        sequence('scripts', browserSync.reload);
     });
 }, {
     options: {
@@ -165,6 +165,8 @@ gulp.task('watch', 'monitor files for changes', ['preflight:watch-directory', 'u
 });
 
 gulp.task('update:watch-directory', false, function(done) {
+    if (!flags.folder) { done(); return; }
+
     /* Directory Exists. Let's update the index page and style page to show the correct dimensions
     --------------------------------------------------------------------------- */
     var currentDirectory = fs.cwd('banners/' + flags.folder);
@@ -206,20 +208,12 @@ gulp.task('update:watch-directory', false, function(done) {
 
 /* Update browser(s) when files change
 --------------------------------------------------------------------------- */
-gulp.task('browserSync:watch', false, ['update:watch-directory'], function() {
+gulp.task('browserSync', false, ['update:watch-directory'], function() {
     browserSync({
         server: { baseDir: watchFolder },
         open: true,
         notify: false,
         rewriteRules: (flags.controls)? browserSyncRewriteRules : []
-    });
-});
-
-gulp.task('browserSync:review', false, function() {
-    browserSync({
-        server: { baseDir: './review' },
-        open: true,
-        notify: false
     });
 });
 
@@ -229,16 +223,27 @@ gulp.task('clean:review', function(done) {
     return del(['review/**/.*', 'review'], {force: true});
 });
 
+gulp.task('review', 'build review page from banner directories', ['review:build'], function(done) {
+    watchFolder = 'review';
+    sequence('browserSync', done);
+});
+
 // pull remote template file, merge and put into `review` folder
-gulp.task('review', 'build review page from banner directories', ['preflight:package.json', 'preflight:directory-check', 'preflight:banners-fallback-image', 'review-template:build'], function(done) {
+gulp.task('review:build', false, ['preflight:package.json', 'preflight:directory-check', 'preflight:banners-fallback-image', 'review-template:build'], function(done) {
+    watchFolder = 'review';
 
     // Copy banners into review (only folders with dimensions in label)
     var bannerList = utils.getBanners();
     bannerList.forEach(function(item) {
         var banner = './review/banners/' + item;
         fs.copy('./banners/' + item, banner);
-        // remove controls and source.css, used during development
-        del([banner + '/assets/_banner-support-files', banner + '/assets/css/source.css']);
+        // remove unnecessary files/folders witin the `assets` folder
+        fs.remove(banner + '/assets/_banner-support-files');
+        fs.remove(banner + '/assets/css/source.css');
+        fs.remove(banner + '/assets/img/keyframes');
+        // remove the fonts folder, if empty
+        var dirFonts = fs.inspectTree(banner + '/assets/css/fonts/');
+        if (!dirFonts.size) { fs.remove(banner + '/assets/css/fonts/'); }
     });
 
     // rename fallback image
@@ -247,7 +252,7 @@ gulp.task('review', 'build review page from banner directories', ['preflight:pac
         fs.rename(image, project.name + '_' + utils.getDimensions(image).formatted + '.' + ext);
     });
 
-    sequence('browsersync:review', done);
+    done();
 });
 
 gulp.task('review-template:build', false, function(done) {
@@ -333,23 +338,11 @@ gulp.task('clean:deploy', false, function(done) {
     return del(['deploy/**/.*', 'deploy/**/*'], {force: true});
 });
 gulp.task('clean:deploy-folders', false, ['clean:review'], function(done) {
-    return del.sync(['deploy/**/*', '!deploy/*.zip'], {force: true});
+    return del(['deploy/**/*', '!deploy/*.zip'], {force: true});
 });
 
 gulp.task('inject:ad-platform', false, function(done) {
-    var errors = [];
-    var errorTitle = gutil.colors.bgRed.white.bold('  advertising platform  ') + '\n\n';
     var platform = flags.platform.toLowerCase();
-
-    if (!flags.platform) {
-        errors.push(gutil.colors.red('\u2718') + gutil.colors.bold(' ad platform flag') + ': missing\n');
-        errors.push('platform options: ' + gutil.colors.cyan('doubleclick') + ' or ' +  gutil.colors.cyan('sizmek') + '\n\n');
-        errors.push(gutil.colors.gray('e.g. gulp deploy --platform doubleclick\n'));
-        errors.push(gutil.colors.gray('e.g. gulp deploy --platform sizmek\n\n'));
-
-        console.log(utils.message(errorTitle + errors.join('')));
-        process.exit(1);
-    }
 
     var supportFiles = fs.cwd('./banners/_banner-support-files/ad-platform/');
     var markdown = supportFiles.read(flags.platform + '.md').toString();
@@ -387,13 +380,18 @@ gulp.task('inject:ad-platform', false, function(done) {
 });
 
 // loop through directories, clean up folders/files, zip up for distribution
-gulp.task('deploy', 'zip up banner directories for distribution', ['clean:deploy', 'review'], function(done) {
-    fs.move('review/banners', 'deploy');
+gulp.task('deploy', 'zip up banner directories for distribution', ['clean:deploy', 'preflight:deploy', 'review:build', 'deploy:build'], function(done) {
     sequence('inject:ad-platform', 'zip', 'clean:deploy-folders', done);
 }, {
     options: {
         'platform': 'ad platform distribution (`doubleclick` or `sizmek`)'
     }
+});
+
+gulp.task('deploy:build', false, ['review:build'], function(done) {
+    fs.remove('deploy');
+    fs.move('review/banners', 'deploy');
+    done();
 });
 
 /* SUB-TASK: Two actions: Zip up each directory, zip up all directories as one
@@ -408,6 +406,8 @@ gulp.task('zip', false, function(done) {
             .pipe(zip(project.name + '_' + folder + '.zip'))
             .pipe(gulp.dest(zipFolder));
     });
+
+    if (folders.length === 1) { return merge(singleZip); }
 
     var groupZip = gulp
         .src(path.join(zipFolder, '/**/*'))
@@ -426,10 +426,11 @@ gulp.task('html', false, function(done) {
         .pipe(plumber({ errorHandler: reportError }));
 });
 
-// gulp.task('assets', false, function() {
-//     return gulp
-//         .src(watchFolder + paths.img);
-// });
+gulp.task('assets', false, function() {
+    return gulp
+        .src(watchFolder + paths.img)
+        .pipe(plumber({ errorHandler: reportError }));
+});
 
 gulp.task('styles', false, function() {
     var processors = [
@@ -448,10 +449,11 @@ gulp.task('styles', false, function() {
         .pipe(gulp.dest(watchFolder + paths.css.destination));
 });
 
-// gulp.task('scripts', false, function() {
-//     return gulp
-//         .src(watchFolder + paths.script);
-// });
+gulp.task('scripts', false, function() {
+    return gulp
+        .src(watchFolder + paths.script)
+        .pipe(plumber({ errorHandler: reportError }));
+});
 
 /* SUB-TASKS: Preflight Checklist
 ==================================================================================================== */
@@ -581,6 +583,23 @@ gulp.task('preflight:banners-fallback-image', false, function() {
     if (errors.length) {
         var msg = errorTitle + errors.join('') + errorNote + '\n';
         console.log(utils.message(msg));
+        process.exit(1);
+    }
+});
+
+/* Ad Platform flag must be declared to begin deploy process
+--------------------------------------------------------------------------- */
+gulp.task('preflight:deploy', false, function() {
+    var errors = [];
+    var errorTitle = gutil.colors.bgRed.white.bold('  advertising platform  ') + '\n\n';
+
+    if (!flags.platform) {
+        errors.push(gutil.colors.red('\u2718') + gutil.colors.bold(' ad platform flag') + ': missing\n');
+        errors.push('platform options: ' + gutil.colors.cyan('doubleclick') + ' or ' +  gutil.colors.cyan('sizmek') + '\n\n');
+        errors.push(gutil.colors.gray('e.g. gulp deploy --platform doubleclick\n'));
+        errors.push(gutil.colors.gray('e.g. gulp deploy --platform sizmek\n\n'));
+
+        console.log(utils.message(errorTitle + errors.join('')));
         process.exit(1);
     }
 });
