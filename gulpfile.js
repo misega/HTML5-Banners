@@ -144,7 +144,7 @@ gulp.task('default', function(done) {
 
 /* TASK: Watch -- Watch a specific banner directory for changes; set flag `--folder {name}`
 ==================================================================================================== */
-gulp.task('watch', 'monitor files for changes', ['preflight:watch-directory', 'update:watch-directory', 'styles', 'browserSync'], function(done) {
+gulp.task('watch', 'monitor files for changes', ['preflight:watch-directory', 'update:watch-directory', 'styles', 'browserSync:watch'], function(done) {
     gulp.watch([watchFolder + paths.html]).on('change', function() {
         sequence('html', browserSync.reload);
     });
@@ -206,12 +206,20 @@ gulp.task('update:watch-directory', false, function(done) {
 
 /* Update browser(s) when files change
 --------------------------------------------------------------------------- */
-gulp.task('browserSync', false, ['update:watch-directory'], function() {
+gulp.task('browserSync:watch', false, ['update:watch-directory'], function() {
     browserSync({
         server: { baseDir: watchFolder },
         open: true,
         notify: false,
         rewriteRules: (flags.controls)? browserSyncRewriteRules : []
+    });
+});
+
+gulp.task('browserSync:review', false, function() {
+    browserSync({
+        server: { baseDir: './review' },
+        open: true,
+        notify: false
     });
 });
 
@@ -229,8 +237,8 @@ gulp.task('review', 'build review page from banner directories', ['preflight:pac
     bannerList.forEach(function(item) {
         var banner = './review/banners/' + item;
         fs.copy('./banners/' + item, banner);
-        // remove controls, used during development
-        fs.remove(banner + '/assets/_banner-support-files');
+        // remove controls and source.css, used during development
+        del([banner + '/assets/_banner-support-files', banner + '/assets/css/source.css']);
     });
 
     // rename fallback image
@@ -239,7 +247,7 @@ gulp.task('review', 'build review page from banner directories', ['preflight:pac
         fs.rename(image, project.name + '_' + utils.getDimensions(image).formatted + '.' + ext);
     });
 
-    done();
+    sequence('browsersync:review', done);
 });
 
 gulp.task('review-template:build', false, function(done) {
@@ -265,6 +273,9 @@ gulp.task('review-template:update-directory', false, function(done) {
     review.move('./assets', '../assets');
     // remove extra files
     del(['review/README.md', 'review/source', 'review/public', 'review/.*']);
+    // add banner controls for review
+    var controls = '_banner-support-files/controls/';
+    fs.copy('./banners/' + controls, './review/assets/' + controls);
 
     done();
 });
