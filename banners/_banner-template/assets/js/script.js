@@ -25,6 +25,11 @@ var timeline = (function MasterTimeline() {
     var tl;
     var win = window;
 
+    function initTimeline() {
+        document.querySelector('#ad .banner').style.display = 'block';
+        createTimeline();
+    }
+
     function createTimeline() {
         tl = new TimelineMax({delay: 0.25, onStart: updateStart, onComplete: updateComplete, onUpdate: updateStats});
         // ---------------------------------------------------------------------------
@@ -92,7 +97,7 @@ var timeline = (function MasterTimeline() {
     }
 
     return {
-        init: createTimeline,
+        init: initTimeline,
         get: getTimeline
     };
 
