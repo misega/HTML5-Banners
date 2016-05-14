@@ -390,6 +390,10 @@ gulp.task('inject:ad-platform', false, function(done) {
 gulp.task('deploy', 'zip up banner directories for distribution', ['clean:deploy', 'review'], function(done) {
     fs.move('review/banners', 'deploy');
     sequence('inject:ad-platform', 'zip', 'clean:deploy-folders', done);
+}, {
+    options: {
+        'platform': 'ad platform distribution (`doubleclick` or `sizmek`)'
+    }
 });
 
 /* SUB-TASK: Two actions: Zip up each directory, zip up all directories as one
