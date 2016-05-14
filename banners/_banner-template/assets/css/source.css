@@ -31,7 +31,7 @@ $height: {{height}};
 .banner {
     position: relative;
     height: 100%;
-    background: #000 url('../images/background.jpg') no-repeat top left;
+    background: #000;
 }
 
 /* Frame Base Style
@@ -48,25 +48,25 @@ $height: {{height}};
 /* Frame 1
 --------------------------------------------------------------------------- */
 .frame1-text {
-    absolute: top 175px left 340px;
+    absolute: top 10px left 10px;
 }
 
 /* Frame 2
 --------------------------------------------------------------------------- */
 .frame2-text {
-    absolute: top 175px left 340px;
+    absolute: top 10px left 10px;
 }
 
 /* Frame 3
 --------------------------------------------------------------------------- */
 .frame3-text {
-    absolute: top 175px left 340px;
+    absolute: top 10px left 10px;
 }
 
 /* Frame 4
 --------------------------------------------------------------------------- */
 .frame4-text {
-    absolute: top 175px left 340px;
+    absolute: top 10px left 10px;
 }
 
 /* Utility Styles
