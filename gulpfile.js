@@ -232,13 +232,15 @@ gulp.task('review', 'build review page from banner directories', ['review:build'
 gulp.task('review:build', false, ['preflight:package.json', 'preflight:directory-check', 'preflight:banners-fallback-image', 'review-template:build'], function(done) {
     watchFolder = 'review';
 
+    // remove support files from the `assets` folder before copying
+    del.sync('./banners/**/assets/_banner-support-files');
+
     // Copy banners into review (only folders with dimensions in label)
     var bannerList = utils.getBanners();
     bannerList.forEach(function(item) {
         var banner = './review/banners/' + item;
         fs.copy('./banners/' + item, banner);
-        // remove unnecessary files/folders witin the `assets` folder
-        fs.remove(banner + '/assets/_banner-support-files');
+        // remove unnecessary files/folders within the `assets` folder
         fs.remove(banner + '/assets/css/source.css');
         fs.remove(banner + '/assets/img/keyframes');
         // remove the fonts folder, if empty
@@ -465,7 +467,7 @@ gulp.task('preflight:package.json', false, function() {
     var errorNote = '\nProject information will be displayed\non the generated review page.\nView ' + gutil.colors.cyan.italic('README.md') + ' for more details\n\n';
 
     if (pkg.name === defaults.name || !pkg.name.length || !pkg.name.match(/\b(\d{2}[-]?[a-z]{3}[-]?\d{4})\b/)) {
-        errors.push(gutil.colors.red('\u2718') + gutil.colors.bold(' name') + ': required format ' + gutil.colors.gray('YY-aaa-9999') + '\n');
+        errors.push(gutil.colors.red('\u2718') + gutil.colors.bold(' name') + ': required format ' + gutil.colors.cyan('YY-aaa-9999') + '\n');
         errors.push('  - YY: 2-digit Year\n');
         errors.push('  - aaa: 3-digit Client Code\n');
         errors.push('  - 9999: 4-digit Job Code\n');
