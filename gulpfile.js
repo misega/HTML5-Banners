@@ -261,10 +261,9 @@ gulp.task('review-template:build', false, function(done) {
     sequence('clean:review', 'review-template:clone', 'review-template:update-directory', 'review-template:update-index', done);
 });
 
-/* Clone Review Template git repository and update with project-specific info
+/* Clone Review Page repository and set up in `review` directory
 --------------------------------------------------------------------------- */
 gulp.task('review-template:clone', false, ['clean:review'], function(done) {
-    // Clone Review Page repository and set up directory
     git.clone(project.review_template, {args: './review'}, function(err) {
         if (err) { console.log(err); }
         else { done(); }
@@ -274,7 +273,7 @@ gulp.task('review-template:clone', false, ['clean:review'], function(done) {
 /* Move files around and delete unnecessary files/folders
 --------------------------------------------------------------------------- */
 gulp.task('review-template:update-directory', false, function(done) {
-    // move files to ./review root
+    // move files to `review` root
     var review = fs.cwd('./review/public');
     review.move('./index.html', '../index.html');
     review.move('./assets', '../assets');
@@ -322,7 +321,8 @@ gulp.task('review-template:update-index', false, function(done) {
             $('.tabs').html(bannerHtml.join(''));
             $('.tabs').find('input[type="radio"]').first().attr('checked', true);
 
-            $('#tab-item, #tab-single-item').remove(); // remove the templates from the index page
+            // remove the static templates from the index page
+            $('#tab-item, #tab-single-item').remove();
             // write all the changes to the page
             file.contents = new Buffer($.html());
         });
@@ -334,7 +334,7 @@ gulp.task('review-template:update-index', false, function(done) {
         .pipe(gulp.dest('./review'));
 });
 
-/* Task: Deploy -- prep banners and zip each directory for distribution
+/* Clean: Remove any existing folders before proceeding
 --------------------------------------------------------------------------- */
 gulp.task('clean:deploy', false, function(done) {
     return del(['deploy/**/.*', 'deploy/**/*'], {force: true});
@@ -343,6 +343,8 @@ gulp.task('clean:deploy-folders', false, ['clean:review'], function(done) {
     return del(['deploy/**/*', '!deploy/*.zip'], {force: true});
 });
 
+/* Ad Platform: `--platform` flag determines with ad service assets to inject
+--------------------------------------------------------------------------- */
 gulp.task('inject:ad-platform', false, function(done) {
     var platform = flags.platform.toLowerCase();
 
@@ -381,7 +383,8 @@ gulp.task('inject:ad-platform', false, function(done) {
         .pipe(gulp.dest('./deploy'));
 });
 
-// loop through directories, clean up folders/files, zip up for distribution
+/* Task: Deploy -- clean up folders/files, zip up for distribution
+--------------------------------------------------------------------------- */
 gulp.task('deploy', 'zip up banner directories for distribution', ['clean:deploy', 'preflight:deploy', 'review:build', 'deploy:build'], function(done) {
     sequence('inject:ad-platform', 'zip', 'clean:deploy-folders', done);
 }, {
@@ -401,6 +404,7 @@ gulp.task('deploy:build', false, ['review:build'], function(done) {
 gulp.task('zip', false, function(done) {
     var folders = utils.getFolders(zipFolder);
 
+    // each folder will be zipped up
     var singleZip = folders.map(function(folder) {
         return gulp
             .src(path.join(zipFolder, folder, '/**/*'))
@@ -409,8 +413,10 @@ gulp.task('zip', false, function(done) {
             .pipe(gulp.dest(zipFolder));
     });
 
+    // if there is only one, there's no need to create a "group" zip too
     if (folders.length === 1) { return merge(singleZip); }
 
+    // all folders will be grouped and zipped up into one file
     var groupZip = gulp
         .src(path.join(zipFolder, '/**/*'))
         .pipe(plumber({ errorHandler: reportError }))
