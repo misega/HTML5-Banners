@@ -20,8 +20,8 @@ basket.require(
     _stylesheet.appendStyleSheet(basket.get('styles').data, function(err, style) {
         if (err) { console.error(err); }
         else {
-            var container = ($('html').is('.in-review'))? '.banner-container' : 'body';
-            $(container).banner_controls();
+            var container = (document.querySelector('body').classList.contains('in-review'))? '.banner-container' : 'body';
+            banner_controls.attachTo(container);
         }
     });
 });

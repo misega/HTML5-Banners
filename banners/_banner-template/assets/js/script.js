@@ -1,14 +1,12 @@
 /* global TimelineMax, Power4, EB, EBG */
 
-// Broadcast Events
+// Broadcast Events shim
 // ====================================================================================================
 (function() {
+    if (typeof window.CustomEvent === 'function') { return false; }
+
     function CustomEvent(event, params) {
-        params = params || {
-            bubbles: false,
-            cancelable: false,
-            detail: undefined
-        };
+        params = params || { bubbles: false, cancelable: false, detail: undefined };
         var evt = document.createEvent('CustomEvent');
         evt.initCustomEvent(event, params.bubbles, params.cancelable, params.detail);
         return evt;
@@ -65,28 +63,21 @@ var timeline = (function MasterTimeline() {
 
     function updateStart() {
         var start = new CustomEvent('start', {
-            'detail': {
-                'hasStarted': true
-            }
+            'detail': { 'hasStarted': true }
         });
         win.dispatchEvent(start);
     }
 
     function updateComplete() {
         var complete = new CustomEvent('complete', {
-            'detail': {
-                'hasStopped': true
-            }
+            'detail': { 'hasStopped': true }
         });
         win.dispatchEvent(complete);
     }
 
     function updateStats() {
         var statistics = new CustomEvent('stats', {
-            'detail': {
-                'totalTime': tl.totalTime(),
-                'totalProgress': tl.totalProgress(),
-                'totalDuration': tl.totalDuration()
+            'detail': { 'totalTime': tl.totalTime(), 'totalProgress': tl.totalProgress(), 'totalDuration': tl.totalDuration()
             }
         });
         win.dispatchEvent(statistics);

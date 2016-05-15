@@ -16,13 +16,10 @@ NodeList.prototype.on = NodeList.prototype.addEventListener = function(name, fn)
 };
 
 // ====================================================================================================
-var banner_controls = (function() {
-    var activeSlider = false;
-    var hasCompleted = false;
-
+var banner_controls = (function banner_controls() {
     var $element;
+    var $window = window;
     var $iframe = $('.banner-content');
-    var $window = ($iframe.length) ? $iframe[0].contentWindow : window;
 
     var timelineReady = new Promise(function(resolve, reject) {
         (function waitForTimeline() {
@@ -51,20 +48,26 @@ var banner_controls = (function() {
         '</ul>';
 
     function buildControls() {
-        attachControls();
         /* Cache Control Elements
         ----------------------------------------------------------------------- */
         var activeSlider = false;
         var hasCompleted = false;
-        var timeline = $window.timeline;
-        var $controls = $element.appendChild(tml_controls);
-        var $btnPlayPause = $('.banner-controls .btn-play-pause');
-        var $timeCurrent = $('.banner-controls .time-current');
-        var $timeTotal = $('.banner-controls .time-total');
+        var timeline = $window.timeline.get();
 
-        var $progressbarThumb;
-        var $progressbar = $('.banner-controls .progress-bar');
-        var $progressbarTotal = $progressbar.querySelector('.total');
+        var $banner_controls = $('.banner-controls');
+        if (!$banner_controls) {
+            $element.insertAdjacentHTML('beforeend', tml_controls);
+            $banner_controls = $('.banner-controls');
+        }
+
+        var $btnPlayPause = $banner_controls.querySelector('.btn-play-pause');
+        var $timeCurrent = $banner_controls.querySelector('.time-current');
+        var $timeTotal = $banner_controls.querySelector('.time-total');
+
+        var $progressbar = $banner_controls.querySelector('.progress-bar');
+        var $progressbarTotal = $banner_controls.querySelector('.total');
+        var $progressbarBkgd = $banner_controls.querySelectorAll('.progress-bar, .thumb');
+        var $progressbarHandle;
 
         /* Event Listeners: Play/Pause Button
         ----------------------------------------------------------------------- */
@@ -81,40 +84,42 @@ var banner_controls = (function() {
             }
         }, false);
 
-        // $btnPlayPause.on('click', function() {
-        //     $(this).parent().toggleClass('pause');
+        $btnPlayPause.addEventListener('click', function(e) {
+            e.currentTarget.parentNode.classList.toggle('pause');
 
-        //     if (hasCompleted) {
-        //         hasCompleted = false;
-        //         timeline.get().restart();
-        //         return;
-        //     }
+            if (hasCompleted) {
+                hasCompleted = false;
+                timeline.restart();
+                return;
+            }
 
-        //     timeline.get().paused(!timeline.get().paused());
-        // });
+            timeline.paused(!timeline.paused());
+        }, false);
 
         /* Event Listeners: Progress Bar / Thumb
         ----------------------------------------------------------------------- */
-        $progressbarThumb = new Dragdealer($progressbar, {
+        $progressbarHandle = new Dragdealer($progressbar, {
             animationCallback: function(x, y) {
-                timeline.get().totalProgress(x);
+                timeline.totalProgress(x);
             }
         });
 
-        // $progressbar.add($progressbar.find('.thumb')).mousedown(function() {
-        //     activeSlider = true;
-        //     if (!timeline.get().paused()) { timeline.get().pause(); }
-        //     $btnPlayPause.parentNode.classList.remove('pause');
-        // }).mouseup(function() {
-        //     activeSlider = false;
-        // });
+        $progressbarBkgd.addEventListener('mousedown', function() {
+            activeSlider = true;
+            if (!timeline.paused()) { timeline.pause(); }
+            $btnPlayPause.parentNode.classList.remove('pause');
+        }, false);
+
+        $progressbarBkgd.addEventListener('mouseup', function() {
+            activeSlider = false;
+        }, false);
 
         /* Event Listeners: Update Time Display and Progress Bar
         ----------------------------------------------------------------------- */
         $window.addEventListener('stats', function(e) {
             var duration = e.detail;
             $progressbarTotal.style.width = (duration.totalProgress * 100) + '%';
-            $progressbarThumb.setValue(duration.totalProgress, 0, true);
+            $progressbarHandle.setValue(duration.totalProgress, 0, true);
             $timeCurrent.textContent = duration.totalTime.toFixed(2);
             $timeTotal.textContent = duration.totalDuration.toFixed(2);
         }, false);
@@ -122,16 +127,17 @@ var banner_controls = (function() {
 
     /* Init
     --------------------------------------------------------------------------- */
-    if ($iframe.length) {
+    if ($iframe) {
         $iframe.addEventListener('load', function() {
-            timelineReady().then(buildControls);
+            $window = $iframe.contentWindow;
+            timelineReady.then(buildControls);
         }, false);
     }
     else {
-        timelineReady().then(buildControls);
+        timelineReady.then(buildControls);
     }
 
     return {
-        attach: attachControls
+        attachTo: attachControls
     };
 })();
