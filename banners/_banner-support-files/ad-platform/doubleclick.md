@@ -27,11 +27,10 @@ function init() {
 
 function startAd() {
     document.getElementById('clickthrough-button').addEventListener('click', bgExitHandler, false);
-    document.querySelector('.banner').style.display = 'block';
     timeline.init();
 }
 
-var bgExitHandler = function(e) {
+var bgExitHandler = function() {
     Enabler.exit('HTML5_Background_Clickthrough');
 };
 ```
