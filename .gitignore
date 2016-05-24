@@ -116,7 +116,6 @@ composer.phar
 # Javascript
 ######################
 *.js.map
-*.min.js
 
 # OSX
 ######################
