@@ -1,14 +1,18 @@
 $width: {{width}};
 $height: {{height}};
 
+*, *:before, *:after {
+    box-sizing: border-box;
+}
+
 /* Base Styles
 --------------------------------------------------------------------------- */
 #ad {
     display: block;
     absolute: top left right bottom;
     margin: auto;
-    width: calc($width - 2px);
-    height: calc($height - 2px);
+    width: $width;
+    height: $height;
     background: #000;
     border: 1px solid #666;
     overflow: hidden;
