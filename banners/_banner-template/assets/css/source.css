@@ -43,7 +43,7 @@ $height: {{height}};
 .frame {
     absolute: top left right bottom;
 
-    font: 900 60px/1 'Helvetica Neue', Helvetica, sans-serif;
+    font-family: 'Helvetica Neue', Helvetica, sans-serif;
     color: #fff;
     text-transform: uppercase;
     letter-spacing: -1px;
