@@ -23,8 +23,11 @@ var timeline = (function MasterTimeline() {
     var tl;
     var win = window;
 
+    function doClickTag() { window.open(window.clickTag); }
+
     function initTimeline() {
         document.querySelector('#ad .banner').style.display = 'block';
+        document.getElementById('ad').addEventListener('click', doClickTag);
         createTimeline();
     }
 
