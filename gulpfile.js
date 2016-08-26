@@ -225,7 +225,12 @@ gulp.task('clean:review', function(done) {
 
 gulp.task('review', 'build review page from banner directories', ['review:build'], function(done) {
     watchFolder = 'review';
-    sequence('browserSync', done);
+    if (flags.preview) { sequence('browserSync', done); }
+    else { done(); }
+}, {
+    options: {
+        'preview': 'preview review page in browser'
+    }
 });
 
 // pull remote template file, merge and put into `review` folder

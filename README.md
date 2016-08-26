@@ -39,7 +39,7 @@ Make sure these are installed first.
 |:----|----|
 | `gulp` | Will show all available tasks
 | `gulp watch`<br>`--folder`<br>`--controls` | Watch files for changes and update browser<br>_flag:_ folder to watch for file changes<br>_flag:_ controls to play/pause & scrub timeline
-| `gulp review` | Build review page; ready to push to review ftp
+| `gulp review`<br>`--preview` | Build review page; ready to push to review ftp<br>_flag:_ open review page in browser
 | `gulp deploy`<br>`--platform` | Compress files and zip folders for distribution<br>_flag:_ ad platform distribution (`doubleclick`,`sizmek`)
 
 #### Update _package.json_
