@@ -14,7 +14,6 @@ $height: {{height}};
     width: $width;
     height: $height;
     background: #000;
-    border: 1px solid #666;
     overflow: hidden;
     user-select: none;
 }
@@ -30,6 +29,11 @@ $height: {{height}};
     -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
     user-select: none;
     cursor: pointer;
+}
+.btn-overlay:before {
+    content: '';
+    absolute: top left right bottom z-index 99;
+    border: 1px solid #666;
 }
 
 .banner {
