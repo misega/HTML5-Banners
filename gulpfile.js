@@ -477,7 +477,7 @@ gulp.task('preflight:package.json', false, function() {
     var errorTitle = gutil.colors.bgRed.white.bold('  package.json  ') + '\n\nRequired Project Information:\n';
     var errorNote = '\nProject information will be displayed\non the generated review page.\nView ' + gutil.colors.cyan.italic('README.md') + ' for more details\n\n';
 
-    if (pkg.name === defaults.name || !pkg.name.length || !pkg.name.match(/\b(\d{2}[-]?[a-z]{3}[-]?\d{4})\b/)) {
+    if (pkg.name === defaults.name || !pkg.name.length || !pkg.name.match(/\b(\d{2}[-]?[a-z]{3,}[-]?\d{4,})\b/)) {
         errors.push(gutil.colors.red('\u2718') + gutil.colors.bold(' name') + ': required format ' + gutil.colors.cyan('YY-aaa-9999') + '\n');
         errors.push('  - YY: 2-digit Year\n');
         errors.push('  - aaa: 3-digit Client Code\n');
