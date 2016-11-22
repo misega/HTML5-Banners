@@ -48,7 +48,6 @@ Make sure these are installed first.
     * **aaa**: 3-digit Client Code
     * **9999**: 4-digit Job Code
 * **title**: Project Title. Added to the review site
-* **description**: Brief description of project. Added to the review site
 
 ## File Structure
 
@@ -109,15 +108,8 @@ Make sure these are installed first.
 
  ## TODO
 
-  - `ad-platform.js` -- do not add ad platform to review `index.html`; only within the zip files
   - `zipfiles.js`
-    - minify html
-    - minify css
-    - minify js
     - minify image assets
-    - rename `index.html` to project name
-    - rename `fallback` image to project name
-    - move fallback image to root folder level
   - `review` -- declare specific folders to use when building a review site
     - allow wildcard filter to select folder names
   - lint on `watch`: html, css, js
