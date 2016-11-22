@@ -39,7 +39,7 @@ Make sure these are installed first.
 |:----|----|
 | `gulp` | Will show all available tasks
 | `gulp watch`<br>`--folder`<br>`--controls` | Watch files for changes and update browser<br>_flag:_ folder to watch for file changes<br>_flag:_ controls to play/pause & scrub timeline
-| `gulp review`<br>`--preview` | Build review page; ready to push to review ftp<br>_flag:_ open review page in browser
+| `gulp review`<br>`--preview`<br>`--platform` | Build review page; ready to push to review ftp<br>_flag:_ open review page in browser<br>_flag:_ add zip files to review site; ready for distribution
 | `gulp deploy`<br>`--platform` | Compress files and zip folders for distribution<br>_flag:_ ad platform distribution (`doubleclick`,`sizmek`)
 
 #### Update _package.json_
@@ -56,9 +56,9 @@ Make sure these are installed first.
 .
 ├── README.md
 ├── package.json                # list of npm packages and some configurations
-├── gulp.js                     # build configuration
+├── gulp.js/                    # build configuration
 ├── node_modules/               # will be created with `npm install`
-└─┬ banners/                   # directory to contain all banner sizes
+└─┬ banners/                    # directory to contain all banner sizes
   ├─┬ _banner-support-files/
   │ ├─┬ ad-platform/            # collection of platform-specific documentation
   │ │ ├── doubleclick.md        # documentation; script blocks will be injected via `deploy` task
@@ -77,7 +77,7 @@ Make sure these are installed first.
       │ ├── source.css          # main styles; compiled by postcss into `style.css`
       │ └── fonts/              # local font files (optional)
       ├─┬ img/                  # graphic files: jpg, gif, png, or svg
-      │ └── keyframes/          # keyframe graphics from PSD for layout/placement; removed via `review` task
+      │ └── keyframes/          # keyframe graphics from PSD for layout/placement; removed via `review` or `deploy` task
       └─┬ js/
         └── script.js           # customized banner animation script
 ```
@@ -105,9 +105,21 @@ Make sure these are installed first.
 [Sizmek CDN/Shared Libraries](https://support.sizmek.com/hc/en-us/articles/206136366--reference-glossary-HTML5-Shared-Libraries)<br>
 
 ## Roadmap
-
- - lint on `watch`: html, css, js
- - minify on `build`: html, css, js
- - optimize on `build`: image assets (jpg, gif, svg)
- - move tasks into a gulp subfolder and separate files
  - update to `gulp 4`
+
+ ## TODO
+
+  - `ad-platform.js` -- do not add ad platform to review `index.html`; only within the zip files
+  - `zipfiles.js`
+    - minify html
+    - minify css
+    - minify js
+    - minify image assets
+    - rename `index.html` to project name
+    - rename `fallback` image to project name
+    - move fallback image to root folder level
+  - `review` -- declare specific folders to use when building a review site
+    - allow wildcard filter to select folder names
+  - lint on `watch`: html, css, js
+  - cleanup: find unused assets (css, js, images)
+  - update controls to add features. See: [mojs-player](https://github.com/legomushroom/mojs-player)
