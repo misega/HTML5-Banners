@@ -8,11 +8,11 @@ Project boilerplate for creating HTML5 animated banners with [GSAP](http://green
 
 * Watch a specific banner folder for changes and update browser during development
 * Compile CSS variables and automatically adds vendor prefixes via `POSTCSS`
-* Lint HTML, CSS, and JS files to maintain coding standards
 * Verify each banner has a fallback image and is the appropriate size
 * Generate review site
 * Update all banners to platform-specific distribution (e.g. DoubleClick, Sizmek)
 * Minify files and assets then create directory of zip files for distribution
+* Verify zip file size does not exceed IAB maximum allowable file size
 
 ###In This Documentation
 1. [Getting Started](#gettingstarted)
