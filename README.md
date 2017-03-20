@@ -14,7 +14,7 @@ Project boilerplate for creating HTML5 animated banners with [GSAP](http://green
 * Minify files and assets then create directory of zip files for distribution
 * Verify zip file size does not exceed IAB maximum allowable file size
 
-###In This Documentation
+### In This Documentation
 1. [Getting Started](#gettingstarted)
 2. [File Structure](#filestructure)
 3. [Resources](#resources)
@@ -35,7 +35,7 @@ Make sure these are installed first.
 4. Run `npm install` to install required files.
 5. When it's done installing, run one of the tasks to get going:
 
-|Tasks ||
+| Tasks ||
 |:----|----|
 | `gulp` | Will show all available tasks
 | `gulp watch`<br>`--folder`<br>`--controls` | Watch files for changes and update browser<br>_flag:_ folder to watch for file changes<br>_flag:_ controls to play/pause & scrub timeline
