@@ -100,3 +100,17 @@ var timeline = (function MasterTimeline() {
 // Banner Init
 // ====================================================================================================
 timeline.init();
+
+(function () {
+  var tl = timeline.get();
+  tl.add('replayBtnFrame')
+      .from('.replay-btn', 0.5, { opacity: 0, ease: Power4.easeInOut }, 'replayBtnFrame')
+  ;
+
+  var replayBtn = document.querySelector('.replay-btn');
+
+  replayBtn.addEventListener('click', function (e) {
+    e.preventDefault();
+    tl.restart();
+  });
+})();
