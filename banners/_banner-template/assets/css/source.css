@@ -82,3 +82,36 @@ $height: {{height}};
 .u-hide {
     display: none;
 }
+
+/* Replay Btn
+--------------------------------------------------------------------------- */
+.ad-overlay {
+    display: block;
+    absolute: top left right bottom;
+    margin: auto;
+    width: $width;
+    height: $height;
+    overflow: hidden;
+    user-select: none;
+}
+
+.replay-btn {
+  absolute: top 10px right 10px;
+  height: 16px;
+  width: 16px;
+  z-index: 55;
+  cursor: pointer;
+}
+
+.replay-btn:hover img {
+  -webkit-animation: rotate-animation 1s infinite linear;
+  -moz-animation: rotate-animation 1s infinite linear;
+  -o-animation: rotate-animation 1s infinite linear;
+  animation: rotate-animation 1s infinite linear;
+}
+
+@keyframes rotate-animation {
+  100% {
+    transform: rotate(360deg);
+  }
+}
