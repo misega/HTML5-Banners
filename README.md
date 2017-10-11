@@ -102,6 +102,8 @@ Make sure these are installed first.
 [Sizmek Banner Formats](http://showcase.sizmek.com/formats)<br>
 [Building Ads / Creating HTML5 Banners](https://support.sizmek.com/hc/en-us/categories/200103329--creative-Building-Ads-Creating-HTML5-Ads)<br>
 [Sizmek CDN/Shared Libraries](https://support.sizmek.com/hc/en-us/articles/206136366--reference-glossary-HTML5-Shared-Libraries)<br>
+[Centro uses Sizmek tags](http://www2.centro.net/html5)<br>
+<br>
 
 ## Roadmap
  - update to `gulp 4`
